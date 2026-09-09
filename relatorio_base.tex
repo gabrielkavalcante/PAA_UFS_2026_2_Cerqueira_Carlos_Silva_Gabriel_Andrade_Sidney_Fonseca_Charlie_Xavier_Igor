@@ -1,0 +1,110 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2cm}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+\usepackage{hyperref}
+
+\title{\textbf{Atividade 1 (AV1) - Projeto e Análise de Algoritmos}\\
+\large Corretude, eficiência e recuperação de contexto para IA generativa}
+\author{
+    Carlos Adriano Gama Cerqueira \\
+    Gabriel Cavalcante Silva \\
+    Sidney Matheus Santos de Andrade \\
+    Charlie Rodrigues Fonseca \\
+    Igor Rafael Silva Xavier
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Identificação da Equipe}
+\textbf{Tema e Corpus:} 6 - Notícias de fontes públicas (Dataset de Notícias Folha/UOL - Kaggle).\\
+\textbf{Equipe:} Carlos Adriano Gama Cerqueira, Gabriel Cavalcante Silva, Sidney Matheus Santos de Andrade, Charlie Rodrigues Fonseca, Igor Rafael Silva Xavier.
+
+\section{Tema, Corpus e Fonte}
+O corpus escolhido é o \textit{Dataset de Notícias Folha/UOL}, extraído da plataforma Kaggle. Trata-se de um conjunto de dados público contendo artigos de notícias em português. 
+
+\section{URL do Repositório, Licença e Acesso}
+\textbf{URL do Repositório:} \url{https://github.com/gabrielkavalcante/PAA_UFS_2026_2_Cerqueira_Carlos_Silva_Gabriel_Andrade_Sidney_Fonseca_Charlie_Xavier_Igor}\\
+\textbf{Licença:} MIT License.\\
+\textbf{Data de acesso inicial:} 09 de setembro de 2026.
+
+\section{Definição Formal do Problema}
+O sistema recebe como entrada um corpus $C = \{d_1, d_2, \dots, d_N\}$, uma consulta $q$, e um valor inteiro $k \ge 1$.
+A saída é uma lista $R = [r_1, r_2, \dots, r_m]$, com $0 \le m \le k$, ordenada de forma não crescente com base na função de relevância $f(d_i, q)$, que calcula a frequência absoluta dos termos de $q$ em $d_i$.
+
+\section{Representação dos Dados e Estratégia de Chunking}
+Os textos originais passam por normalização (minúsculas e remoção de pontuação). O particionamento (\textit{chunking}) é feito segmentando o texto em blocos de tamanho fixo, garantindo que o contexto seja granular o suficiente para as buscas.
+
+\begin{center}
+\begin{tikzpicture}[node distance=2cm, auto,
+    box/.style={rectangle, draw, fill=blue!10, text width=3cm, text centered, rounded corners, minimum height=1.5cm},
+    arrow/.style={-{Stealth[scale=1.2]}, thick}]
+    
+    \node (raw) [box] {Corpus Bruto (CSV)};
+    \node (norm) [box, right=of raw] {Normalização (Minúsculas / Sem Pontuação)};
+    \node (chunk) [box, right=of norm] {Chunking (Blocos de $N$ palavras)};
+    \node (final) [box, below=of chunk] {Corpus Processado (Lista/Dicionário)};
+    
+    \draw [arrow] (raw) -- (norm);
+    \draw [arrow] (norm) -- (chunk);
+    \draw [arrow] (chunk) -- (final);
+\end{tikzpicture}
+\end{center}
+
+\section{Algoritmos e Pseudocódigo}
+\textit{A ser preenchido após a implementação (Busca Linear, Ordenação, Busca Binária, Divisão e Conquista).}
+
+\section{Justificativa de Corretude}
+\textit{A ser preenchido (Invariante de laço ou indução).}
+
+\section{Análise no Modelo RAM}
+\textit{A ser preenchido (Definição de operações elementares e custos).}
+
+\section{Melhor, Pior e Caso Médio}
+\textit{A ser preenchido.}
+
+\section{Recorrências}
+\textit{A ser preenchido.}
+
+\section{Metodologia Experimental}
+\textit{A ser preenchido.}
+
+\section{Resultados e Gráficos}
+\textit{A ser preenchido.}
+
+\section{Discussão de Escalabilidade}
+\textit{A ser preenchido.}
+
+\section{Relação com IA Generativa e RAG}
+\textit{A ser preenchido.}
+
+\section{Limitações e Ameaças à Validade}
+\textit{A ser preenchido.}
+
+\section{Declaração de Uso de IA Generativa}
+\textit{A ser preenchido.}
+
+\section{Contribuição Individual}
+\begin{itemize}
+    \item \textbf{Carlos Adriano Gama Cerqueira:} [A preencher]
+    \item \textbf{Gabriel Cavalcante Silva:} Ingestão de dados, normalização, chunking, estruturação do relatório em LaTeX.
+    \item \textbf{Sidney Matheus Santos de Andrade:} [A preencher]
+    \item \textbf{Charlie Rodrigues Fonseca:} [A preencher]
+    \item \textbf{Igor Rafael Silva Xavier:} [A preencher]
+\end{itemize}
+
+\section{URL do Vídeo}
+\textit{A ser preenchido.}
+
+\section{Referências}
+\textit{A ser preenchido.}
+
+\end{document}
