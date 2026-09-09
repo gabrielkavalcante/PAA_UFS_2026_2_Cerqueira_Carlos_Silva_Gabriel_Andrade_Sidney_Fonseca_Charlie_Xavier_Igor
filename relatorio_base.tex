@@ -28,13 +28,28 @@
 \textbf{Tema e Corpus:} 6 - Notícias de fontes públicas (Dataset de Notícias Folha/UOL - Kaggle).\\
 \textbf{Equipe:} Carlos Adriano Gama Cerqueira, Gabriel Cavalcante Silva, Sidney Matheus Santos de Andrade, Charlie Rodrigues Fonseca, Igor Rafael Silva Xavier.
 
-\section{Tema, Corpus e Fonte}
-O corpus escolhido é o \textit{Dataset de Notícias Folha/UOL}, extraído da plataforma Kaggle. Trata-se de um conjunto de dados público contendo artigos de notícias em português. 
+\section{Introdução e Contextualização}
+O presente trabalho desenvolve-se no âmbito da disciplina de Projeto e Análise de Algoritmos (PAA), abordando o Tema 6, focado no processamento, busca e ordenação de notícias de fontes públicas. A relevância deste estudo reside na necessidade de manipular eficientemente grandes volumes de dados textuais não estruturados, aplicando rigor matemático e computacional para otimizar operações de recuperação de informação. O projeto visa integrar etapas de engenharia de dados, versionamento eficiente e implementação de algoritmos clássicos de ordenação e busca.
+
+\section{Descrição do Corpus e Pré-processamento}
+Para a realização dos experimentos, utilizou-se o Dataset de Notícias Folha/UOL extraído da plataforma Kaggle, composto por um volume bruto de aproximadamente 300 MB de dados textuais. Devido à natureza volumétrica do corpus e às diretrizes de versionamento do edital do projeto — que vedam o envio de arquivos de grande porte para o repositório remoto —, o conjunto de dados foi submetido a um pipeline de tratamento em Python. 
+
+O script de pré-processamento (\texttt{preprocessamento.py}) executou as etapas de ingestão, limpeza de caracteres especiais, normalização de strings e estruturação. O arquivo final processado (\texttt{articles.csv}) foi hospedado em repositório externo seguro (Google Drive), garantindo o acesso padronizado de toda a equipe para as etapas subsequentes de análise algorítmica.
 
 \section{URL do Repositório, Licença e Acesso}
 \textbf{URL do Repositório:} \url{https://github.com/gabrielkavalcante/PAA_UFS_2026_2_Cerqueira_Carlos_Silva_Gabriel_Andrade_Sidney_Fonseca_Charlie_Xavier_Igor}\\
 \textbf{Licença:} MIT License.\\
 \textbf{Data de acesso inicial:} 09 de setembro de 2026.
+
+\section{Infraestrutura e Organização do Repositório}
+A arquitetura do projeto foi estruturada visando a reprodutibilidade, a clareza e a conformidade com boas práticas de desenvolvimento de software. O controle de versão foi estabelecido por meio do Git e hospedado no GitHub, utilizando um arquivo de configuração \texttt{.gitignore} rigoroso para impedir o rastreamento acidental de arquivos pesados e artefatos binários locais. 
+
+A divisão modular do repositório contempla:
+\begin{itemize}
+    \item \textbf{\texttt{preprocessamento.py}}: Script responsável pela automação da limpeza e normalização do corpus bruto.
+    \item \textbf{\texttt{relatorio_base.tex}}: Esqueleto oficial da documentação técnica em formato LaTeX.
+    \item \textbf{\texttt{README.md}}: Manual de instruções para clonagem, instalação de dependências (\texttt{pandas}, \texttt{kagglehub}) e obtenção do corpus normalizado.
+\end{itemize}
 
 \section{Definição Formal do Problema}
 O sistema recebe como entrada um corpus $C = \{d_1, d_2, \dots, d_N\}$, uma consulta $q$, e um valor inteiro $k \ge 1$.
@@ -44,7 +59,7 @@ A saída é uma lista $R = [r_1, r_2, \dots, r_m]$, com $0 \le m \le k$, ordenad
 Os textos originais passam por normalização (minúsculas e remoção de pontuação). O particionamento (\textit{chunking}) é feito segmentando o texto em blocos de tamanho fixo, garantindo que o contexto seja granular o suficiente para as buscas.
 
 \begin{center}
-\begin{tikzpicture}[node distance=2cm, auto,
+\begin{tikzpicture}[node distance=2.2cm, auto,
     box/.style={rectangle, draw, fill=blue!10, text width=3cm, text centered, rounded corners, minimum height=1.5cm},
     arrow/.style={-{Stealth[scale=1.2]}, thick}]
     
@@ -95,7 +110,7 @@ Os textos originais passam por normalização (minúsculas e remoção de pontua
 \section{Contribuição Individual}
 \begin{itemize}
     \item \textbf{Carlos Adriano Gama Cerqueira:} [A preencher]
-    \item \textbf{Gabriel Cavalcante Silva:} Ingestão de dados, normalização, chunking, estruturação do relatório em LaTeX.
+    \item \textbf{Gabriel Cavalcante Silva:} Ingestão de dados, normalização, chunking, estruturação do repositório, configuração do ambiente e redação das seções iniciais do relatório em LaTeX.
     \item \textbf{Sidney Matheus Santos de Andrade:} [A preencher]
     \item \textbf{Charlie Rodrigues Fonseca:} [A preencher]
     \item \textbf{Igor Rafael Silva Xavier:} [A preencher]
