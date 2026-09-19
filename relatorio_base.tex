@@ -1,125 +1,109 @@
-\documentclass[12pt, a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[portuguese]{babel}
-\usepackage{geometry}
-\geometry{a4paper, margin=2cm}
-\usepackage{amsmath, amsfonts, amssymb}
-\usepackage{tikz}
-\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
-\usepackage{hyperref}
-
-\title{\textbf{Atividade 1 (AV1) - Projeto e Análise de Algoritmos}\\
-\large Corretude, eficiência e recuperação de contexto para IA generativa}
-\author{
-    Carlos Adriano Gama Cerqueira \\
-    Gabriel Cavalcante Silva \\
-    Sidney Matheus Santos de Andrade \\
-    Charlie Rodrigues Fonseca \\
-    Igor Rafael Silva Xavier
-}
-\date{\today}
-
-\begin{document}
-\maketitle
-\tableofcontents
-\newpage
-
-\section{Identificação da Equipe}
-\textbf{Tema e Corpus:} 6 - Notícias de fontes públicas (Dataset de Notícias Folha/UOL - Kaggle).\\
-\textbf{Equipe:} Carlos Adriano Gama Cerqueira, Gabriel Cavalcante Silva, Sidney Matheus Santos de Andrade, Charlie Rodrigues Fonseca, Igor Rafael Silva Xavier.
-
-\section{Introdução e Contextualização}
-O presente trabalho desenvolve-se no âmbito da disciplina de Projeto e Análise de Algoritmos (PAA), abordando o Tema 6, focado no processamento, busca e ordenação de notícias de fontes públicas. A relevância deste estudo reside na necessidade de manipular eficientemente grandes volumes de dados textuais não estruturados, aplicando rigor matemático e computacional para otimizar operações de recuperação de informação. O projeto visa integrar etapas de engenharia de dados, versionamento eficiente e implementação de algoritmos clássicos de ordenação e busca.
-
-\section{Descrição do Corpus e Pré-processamento}
-Para a realização dos experimentos, utilizou-se o Dataset de Notícias Folha/UOL extraído da plataforma Kaggle, composto por um volume bruto de aproximadamente 300 MB de dados textuais. Devido à natureza volumétrica do corpus e às diretrizes de versionamento do edital do projeto — que vedam o envio de arquivos de grande porte para o repositório remoto —, o conjunto de dados foi submetido a um pipeline de tratamento em Python. 
-
-O script de pré-processamento (\texttt{preprocessamento.py}) executou as etapas de ingestão, limpeza de caracteres especiais, normalização de strings e estruturação. O arquivo final processado (\texttt{articles.csv}) foi hospedado em repositório externo seguro (Google Drive), garantindo o acesso padronizado de toda a equipe para as etapas subsequentes de análise algorítmica.
-
-\section{URL do Repositório, Licença e Acesso}
-\textbf{URL do Repositório:} \url{https://github.com/gabrielkavalcante/PAA_UFS_2026_2_Cerqueira_Carlos_Silva_Gabriel_Andrade_Sidney_Fonseca_Charlie_Xavier_Igor}\\
-\textbf{Licença:} MIT License.\\
-\textbf{Data de acesso inicial:} 09 de setembro de 2026.
-
-\section{Infraestrutura e Organização do Repositório}
-A arquitetura do projeto foi estruturada visando a reprodutibilidade, a clareza e a conformidade com boas práticas de desenvolvimento de software. O controle de versão foi estabelecido por meio do Git e hospedado no GitHub, utilizando um arquivo de configuração \texttt{.gitignore} rigoroso para impedir o rastreamento acidental de arquivos pesados e artefatos binários locais. 
-
-A divisão modular do repositório contempla:
-\begin{itemize}
-    \item \textbf{\texttt{preprocessamento.py}}: Script responsável pela automação da limpeza e normalização do corpus bruto.
-    \item \textbf{\texttt{relatorio_base.tex}}: Esqueleto oficial da documentação técnica em formato LaTeX.
-    \item \textbf{\texttt{README.md}}: Manual de instruções para clonagem, instalação de dependências (\texttt{pandas}, \texttt{kagglehub}) e obtenção do corpus normalizado.
-\end{itemize}
-
-\section{Definição Formal do Problema}
-O sistema recebe como entrada um corpus $C = \{d_1, d_2, \dots, d_N\}$, uma consulta $q$, e um valor inteiro $k \ge 1$.
-A saída é uma lista $R = [r_1, r_2, \dots, r_m]$, com $0 \le m \le k$, ordenada de forma não crescente com base na função de relevância $f(d_i, q)$, que calcula a frequência absoluta dos termos de $q$ em $d_i$.
-
-\section{Representação dos Dados e Estratégia de Chunking}
-Os textos originais passam por normalização (minúsculas e remoção de pontuação). O particionamento (\textit{chunking}) é feito segmentando o texto em blocos de tamanho fixo, garantindo que o contexto seja granular o suficiente para as buscas.
-
-\begin{center}
-\begin{tikzpicture}[node distance=2.2cm, auto,
-    box/.style={rectangle, draw, fill=blue!10, text width=3cm, text centered, rounded corners, minimum height=1.5cm},
-    arrow/.style={-{Stealth[scale=1.2]}, thick}]
-    
-    \node (raw) [box] {Corpus Bruto (CSV)};
-    \node (norm) [box, right=of raw] {Normalização (Minúsculas / Sem Pontuação)};
-    \node (chunk) [box, right=of norm] {Chunking (Blocos de $N$ palavras)};
-    \node (final) [box, below=of chunk] {Corpus Processado (Lista/Dicionário)};
-    
-    \draw [arrow] (raw) -- (norm);
-    \draw [arrow] (norm) -- (chunk);
-    \draw [arrow] (chunk) -- (final);
-\end{tikzpicture}
-\end{center}
-
 \section{Algoritmos e Pseudocódigo}
-\textit{A ser preenchido após a implementação (Busca Linear, Ordenação, Busca Binária, Divisão e Conquista).}
+
+\subsection{Busca Linear (Configuração C1)}
+\begin{verbatim}
+função busca_linear(consulta_tokens, corpus):
+    resultados ← lista vazia
+    para cada documento d em corpus:
+        score ← score_bm25(consulta_tokens, d)
+        resultados.adicionar((d.id, score))
+    retornar resultados
+\end{verbatim}
+Complexidade: percorre os $N$ documentos do corpus, calculando o score BM25 de cada um contra os $m$ termos da consulta.
+
+\subsection{Insertion Sort}
+\begin{verbatim}
+função insertion_sort(pares):
+    para j de 1 até n-1:
+        chave ← pares[j]
+        i ← j - 1
+        enquanto i ≥ 0 e vem_depois(pares[i], chave):
+            pares[i+1] ← pares[i]
+            i ← i - 1
+        pares[i+1] ← chave
+    retornar pares
+\end{verbatim}
+O critério \texttt{vem\_depois} implementa a ordem total definida na Seção~6: score decrescente, com desempate por \texttt{doc\_id} crescente. O algoritmo mantém um contador de comparações, utilizado na Seção~14 (Resultados) para amarrar a análise assintótica à medição experimental.
+
+\subsection{Índice Invertido e Busca Binária (Configurações C2 e C3)}
+\begin{verbatim}
+função construir_indice_invertido(corpus):
+    dicionário ← tabela vazia
+    para cada documento d em corpus:
+        para cada termo t em d:
+            dicionário[t].adicionar(d.id)
+    ordenar as chaves de dicionário
+    retornar dicionário
+
+função buscar_termo(dicionário, termo):
+    retornar busca_binária(chaves_ordenadas(dicionário), termo)
+\end{verbatim}
+A busca binária localiza a posting list do termo em $\Theta(\log V)$, em vez de percorrer todo o corpus.
+
+\subsection{Merge Sort (Configuração C3)}
+\begin{verbatim}
+função merge_sort(pares):
+    se |pares| ≤ 1: retornar pares
+    meio ← |pares| / 2
+    esquerda ← merge_sort(pares[0:meio])
+    direita ← merge_sort(pares[meio:])
+    retornar mesclar(esquerda, direita)
+\end{verbatim}
 
 \section{Justificativa de Corretude}
-\textit{A ser preenchido (Invariante de laço ou indução).}
 
-\section{Análise no Modelo RAM}
-\textit{A ser preenchido (Definição de operações elementares e custos).}
+Apresenta-se a prova de corretude do Insertion Sort, por invariante de laço.
 
-\section{Melhor, Pior e Caso Médio}
-\textit{A ser preenchido.}
+\textbf{O que se quer provar:} ao final da execução, a lista de pares (\texttt{doc\_id}, \texttt{score}) está ordenada de forma não crescente por score e é uma permutação da entrada.
 
-\section{Recorrências}
-\textit{A ser preenchido.}
+\textbf{Hipóteses:} o comparador implementa uma ordem total (score decrescente, desempate por \texttt{doc\_id} crescente); os scores são valores finitos.
 
-\section{Metodologia Experimental}
-\textit{A ser preenchido.}
+\textbf{Invariante de laço:} no início de cada iteração do laço externo com índice $j$, o subvetor $A[1..j-1]$ contém os mesmos elementos que continha originalmente, agora em ordem não crescente de score.
 
-\section{Resultados e Gráficos}
-\textit{A ser preenchido.}
-
-\section{Discussão de Escalabilidade}
-\textit{A ser preenchido.}
-
-\section{Relação com IA Generativa e RAG}
-\textit{A ser preenchido.}
-
-\section{Limitações e Ameaças à Validade}
-\textit{A ser preenchido.}
-
-\section{Declaração de Uso de IA Generativa}
-\textit{A ser preenchido.}
-
-\section{Contribuição Individual}
 \begin{itemize}
-    \item \textbf{Carlos Adriano Gama Cerqueira:} [A preencher]
-    \item \textbf{Gabriel Cavalcante Silva:} Ingestão de dados, normalização, chunking, estruturação do repositório, configuração do ambiente e redação das seções iniciais do relatório em LaTeX.
-    \item \textbf{Sidney Matheus Santos de Andrade:} [A preencher]
-    \item \textbf{Charlie Rodrigues Fonseca:} [A preencher]
-    \item \textbf{Igor Rafael Silva Xavier:} [A preencher]
+    \item \textbf{Inicialização:} $j = 2$, logo $A[1..1]$ tem um único elemento e está trivialmente ordenado.
+    \item \textbf{Manutenção:} o laço interno desloca à direita todos os elementos de $A[1..j-1]$ que devem vir depois de $A[j]$ segundo o comparador, inserindo $A[j]$ na posição correta. Nenhum elemento é criado ou perdido, e o subvetor $A[1..j]$ permanece ordenado.
+    \item \textbf{Terminação:} o laço termina com $j = n+1$; pelo invariante, $A[1..n]$ está ordenado e é permutação da entrada. $\blacksquare$
 \end{itemize}
 
-\section{URL do Vídeo}
-\textit{A ser preenchido.}
+\textbf{Limites do argumento:} a prova assume aritmética exata. Em ponto flutuante IEEE-754, dois documentos podem receber scores que diferem no último bit conforme a ordem de acumulação dos termos da consulta; por isso, a ordem de iteração sobre os termos é fixada na implementação. A prova cobre apenas a corretude da ordenação, não a corretude do cálculo do score BM25 em si.
 
-\section{Referências}
-\textit{A ser preenchido.}
+\section{Análise no Modelo RAM}
 
-\end{document}
+\textbf{Parâmetros:} $N$ (documentos do corpus), $L$ (total de tokens do corpus), $m$ (termos da consulta), $k$ (resultados retornados), $V$ (tamanho do vocabulário), $n_t$ (tamanho da posting list do termo $t$).
+
+\textbf{Operações elementares consideradas:} comparação de scores, acesso indexado a vetor, lookup em tabela hash, atribuição, chamada recursiva.
+
+\textbf{Fatores fora do modelo RAM:} leitura do CSV a partir do disco, localidade de cache, overhead do interpretador Python e do coletor de lixo, custo de hashing de strings, ausência de paralelismo.
+
+\section{Melhor, Pior e Caso Médio}
+
+\begin{center}
+\begin{tabular}{lllll}
+\textbf{Algoritmo} & \textbf{Melhor} & \textbf{Pior} & \textbf{Médio} & \textbf{Espaço} \\
+\hline
+Ingestão + tokenização & $\Theta(L)$ & $\Theta(L)$ & $\Theta(L)$ & $\Theta(L)$ \\
+Busca linear (scoring) & $\Theta(N \cdot m)$ & $\Theta(N \cdot m)$ & $\Theta(N \cdot m)$ & $\Theta(N)$ \\
+Busca indexada & $\Theta(m \log V)$ & $\Theta(m \log V + \sum n_t)$ & $\Theta(m \log V + \sum n_t)$ & $\Theta(L)$ \\
+Insertion Sort & $\Theta(N)$ & $\Theta(N^2)$ & $\Theta(N^2)$ & $\Theta(1)$ \\
+Merge Sort & $\Theta(N \log N)$ & $\Theta(N \log N)$ & $\Theta(N \log N)$ & $\Theta(N)$ \\
+\end{tabular}
+\end{center}
+
+O ganho da busca indexada sobre a busca linear decorre de $\sum n_t \ll N \cdot m$: a maioria dos termos aparece em poucos documentos, seguindo aproximadamente uma distribuição de Zipf — hipótese sobre a distribuição dos dados que sustenta o caso médio.
+
+\section{Recorrências}
+
+\textbf{Merge Sort:} $T(N) = 2T(N/2) + \Theta(N)$, originada pelas duas chamadas recursivas sobre as metades da lista somadas ao custo linear da fusão. Pelo Teorema Mestre, caso 2 ($a=2$, $b=2$, $f(N)=\Theta(N)$), resolve-se em $T(N) = \Theta(N \log N)$.
+
+\textbf{Busca binária no dicionário de termos:} $T(n) = T(n/2) + \Theta(1)$, originada pela bisseção do intervalo de busca a cada chamada. Pelo Teorema Mestre, caso 2 ($a=1$, $b=2$, $f(n)=\Theta(1)$), resolve-se em $T(n) = \Theta(\log n)$.
+
+\section{Limitações e Ameaças à Validade}
+
+\begin{itemize}
+    \item O corpus original possui 167.053 notícias; por questões de tempo de execução e risco de estouro de memória, os experimentos utilizam duas amostras aleatórias fixas de 5.000 e 50.000 documentos, que não representam o corpus completo.
+    \item O acervo cobre o período de janeiro de 2015 a setembro de 2017, o que limita a generalização dos resultados para conteúdo atual.
+    \item O corpus provém de uma única fonte jornalística (Folha de S.Paulo), com viés editorial próprio e cobertura geográfica concentrada em Sudeste e Brasília.
+    \item O BM25 é uma função de relevância puramente lexical, sujeita ao problema de \textit{vocabulary mismatch} (discutido na Seção~\ref{sec:rag}).
+    \item Fatores de hardware, interpretador e ausência de paralelismo (Seção~10) introduzem variabilidade nas medições de tempo, mitigada por aquecimento e mediana de repetições.
+\end{itemize}
