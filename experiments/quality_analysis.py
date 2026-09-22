@@ -59,6 +59,8 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+import numpy as np
+
 def compute_token_stats(documents_tokens: list[list[str]]) -> dict[str, float]:
     lengths = [len(tokens) for tokens in documents_tokens]
     if not lengths:
@@ -70,6 +72,9 @@ def compute_token_stats(documents_tokens: list[list[str]]) -> dict[str, float]:
         "stdev": statistics.stdev(lengths) if len(lengths) > 1 else 0.0,
         "min": min(lengths),
         "max": max(lengths),
+        "p25": float(np.percentile(lengths, 25)),
+        "p75": float(np.percentile(lengths, 75)),
+        "p95": float(np.percentile(lengths, 95)),
     }
 
 
