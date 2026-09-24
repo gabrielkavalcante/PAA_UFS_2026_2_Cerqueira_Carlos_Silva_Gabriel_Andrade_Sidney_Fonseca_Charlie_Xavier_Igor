@@ -2,7 +2,7 @@
 
 * **URL do Vídeo:** https://youtu.be/uOwFLV9YuLE
 * **Data de Gravação:** `[22/09/2026]`
-* **Duração:** `[11:49]` (máximo de 10 minutos)
+* **Duração:** `[11:49]` 
 
 ## Participantes
 
