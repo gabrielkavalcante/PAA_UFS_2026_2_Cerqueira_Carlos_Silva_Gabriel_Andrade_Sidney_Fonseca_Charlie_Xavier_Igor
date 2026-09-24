@@ -1,6 +1,6 @@
 # Vídeo da Atividade — PAA (2026.2)
 
-* **URL do Vídeo:** `[INSERIR URL DO VÍDEO]`
+* **URL do Vídeo:** https://studio.youtube.com/video/uOwFLV9YuLE/edit
 * **Data de Gravação:** `[DD/MM/2026]`
 * **Duração:** `[MM:SS]` (máximo de 10 minutos)
 

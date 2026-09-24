@@ -57,7 +57,6 @@ def main():
         for n in N_VALUES:
             print(f"\n--- Iniciando testes para N = {n} ---")
 
-            # Cada configuração tem seu próprio custo de ingestão medido.
             corpus_base, t_ingestao_c1_ms = medir_build(csv_path, n, "c1")
             corpus_indexado, t_ingestao_c2_ms = medir_build(csv_path, n, "c2")
 
@@ -65,7 +64,6 @@ def main():
             build_corpus_index(corpus_indexado)
             t_indice_c2_ms = (time.perf_counter() - inicio) * 1000
 
-            # Para C4, build_corpus inclui a construção do BM25Okapi.
             corpus_c4, t_bm25_c4_ms = medir_build(csv_path, n, "c4")
 
             tamanhos = {
@@ -90,7 +88,6 @@ def main():
                 "c1": (t_ingestao_c1_ms, 0.0),
                 "c2": (t_ingestao_c2_ms, t_indice_c2_ms),
                 "c3": (t_ingestao_c2_ms, t_indice_c2_ms),
-                # Em C4, o tempo de ingestão inclui a construção do BM25Okapi.
                 "c4": (t_bm25_c4_ms, 0.0),
             }
             corpora = {
@@ -108,17 +105,13 @@ def main():
                 for q_idx, texto_query in enumerate(QUERIES, 1):
                     query_tokens = tokenize(clean_text(texto_query))
 
-                    # Aquece a execução sem incluí-la nas medições.
                     run(config, corpus_atual, query_tokens, K)
 
                     for rep in range(1, REPETITIONS + 1):
-                        # Mede o tempo sem o overhead do tracemalloc.
                         inicio_cronometro = time.perf_counter()
                         resultado = run(config, corpus_atual, query_tokens, K)
                         t_consulta_ms = (time.perf_counter() - inicio_cronometro) * 1000
 
-                        # Mede memória em uma execução separada, para não alterar
-                        # o tempo registrado acima. O valor é apenas da consulta.
                         tracemalloc.start()
                         run(config, corpus_atual, query_tokens, K)
                         _, memoria_pico_bytes = tracemalloc.get_traced_memory()
