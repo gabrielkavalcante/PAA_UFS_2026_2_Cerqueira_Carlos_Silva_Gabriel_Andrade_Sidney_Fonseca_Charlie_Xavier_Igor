@@ -1,2 +1,18 @@
 __pycache__
 .venv
+
+# Corpus bruto (grande demais para versionar — use ensure_csv() ou o link do Drive)
+articles.csv
+data/raw/
+
+# Artefatos de compilação LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.pdf
+
+# Build Python
+*.egg-info/
+dist/
+build/

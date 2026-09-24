@@ -1,0 +1,26 @@
+N,query_id,query_text,query_tokens,n_query_tokens,missing_terms,n_missing,top5_c3_doc_ids
+1000,1,impeachment de Dilma Rousseff,impeachment dilma rousseff,3,,0,508 580 958 644 274
+1000,2,operação Lava Jato delação,operacao lava jato delacao,4,,0,192 859 165 72 314
+1000,3,reforma da previdência,reforma previdencia,2,,0,59 917 198 417 307
+1000,4,crise hídrica em São Paulo,crise hidrica paulo,3,,0,566 244 321 287 333
+1000,5,eleição municipal 2016,eleicao municipal 2016,3,,0,893 789 59 884 327
+5000,1,impeachment de Dilma Rousseff,impeachment dilma rousseff,3,,0,1485 508 4723 3520 2037
+5000,2,operação Lava Jato delação,operacao lava jato delacao,4,,0,192 1473 4569 4717 1569
+5000,3,reforma da previdência,reforma previdencia,2,,0,2447 4008 1703 1002 917
+5000,4,crise hídrica em São Paulo,crise hidrica paulo,3,,0,4040 3130 3418 1243 2188
+5000,5,eleição municipal 2016,eleicao municipal 2016,3,,0,893 4760 3629 789 2807
+10000,1,impeachment de Dilma Rousseff,impeachment dilma rousseff,3,,0,1485 508 7420 5879 9823
+10000,2,operação Lava Jato delação,operacao lava jato delacao,4,,0,192 1473 4569 4992 8997
+10000,3,reforma da previdência,reforma previdencia,2,,0,6204 5184 2447 4008 8277
+10000,4,crise hídrica em São Paulo,crise hidrica paulo,3,,0,4040 3130 3418 8516 7853
+10000,5,eleição municipal 2016,eleicao municipal 2016,3,,0,893 4760 9857 9653 9559
+25000,1,impeachment de Dilma Rousseff,impeachment dilma rousseff,3,,0,11972 16659 11918 1485 20233
+25000,2,operação Lava Jato delação,operacao lava jato delacao,4,,0,16475 18636 12883 21583 13091
+25000,3,reforma da previdência,reforma previdencia,2,,0,21147 24838 18524 6204 16596
+25000,4,crise hídrica em São Paulo,crise hidrica paulo,3,,0,4040 12193 3130 3418 19283
+25000,5,eleição municipal 2016,eleicao municipal 2016,3,,0,893 20222 4760 23146 15384
+50000,1,impeachment de Dilma Rousseff,impeachment dilma rousseff,3,,0,32779 24958 11972 39589 16659
+50000,2,operação Lava Jato delação,operacao lava jato delacao,4,,0,16475 34342 18636 12883 21583
+50000,3,reforma da previdência,reforma previdencia,2,,0,21147 24838 33482 18524 38150
+50000,4,crise hídrica em São Paulo,crise hidrica paulo,3,,0,40669 30134 4040 12193 34347
+50000,5,eleição municipal 2016,eleicao municipal 2016,3,,0,36482 25647 31287 893 45090

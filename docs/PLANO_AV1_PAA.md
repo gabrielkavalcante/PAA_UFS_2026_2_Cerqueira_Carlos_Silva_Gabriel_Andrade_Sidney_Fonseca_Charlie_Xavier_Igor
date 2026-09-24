@@ -7,7 +7,7 @@
 
 > **Princípio deste plano:** fazer o mínimo que cumpre integralmente o enunciado, e fazer bem feito. Tudo que não é exigido foi cortado.
 
-**Decisão que remove muito trabalho:** não usar as 167.053 notícias. Trabalhem com duas amostras aleatórias fixas (seed fixa) de **5.000 e 50.000** documentos. O enunciado exige "pelo menos dois tamanhos de corpus" — isso basta, elimina o risco de estouro de memória e torna as 12 execuções rápidas. Registrem a decisão como limitação no relatório.
+**Escopo atual dos experimentos:** não usar as 167.053 notícias de uma só vez. O script utiliza amostras aleatórias reprodutíveis, com `seed=42`, nos tamanhos solicitados **1.000, 5.000, 10.000, 25.000 e 50.000** documentos. Após a limpeza, o tamanho efetivo é registrado em `n_documentos_reais`; tamanhos efetivos repetidos são ignorados.
 
 ---
 ## 1. Ficha do corpus
@@ -20,7 +20,7 @@ Em `docs/FICHA_CORPUS.md`:
 | URL              | `https://www.kaggle.com/datasets/marlesson/news-of-the-site-folhauol`                                                                       |
 | Licença          | **Copiar literalmente da página do Kaggle.** Anotar também que o conteúdo jornalístico permanece sob direitos da Folha                      |
 | Data de acesso   | Data real do download                                                                                                                       |
-| Nº de documentos | 167.053 no total (jan/2015 – set/2017); **amostras usadas: 5.000 e 50.000**                                                                 |
+| Nº de documentos | 167.053 no total (jan/2015 – set/2017); amostras solicitadas: 1.000, 5.000, 10.000, 25.000 e 50.000                                                                    |
 | Idioma           | Português brasileiro                                                                                                                        |
 | Formato          | CSV, colunas `title`, `text`, `date`, `category`, `subcategory`, `link`                                                                     |
 | Limpeza          | Remoção de linhas com `text` vazio; remoção de duplicatas exatas de título+texto                                                            |
@@ -138,7 +138,7 @@ Para a parte de recorrências, podemos analisar o Merge Sort e explicar a origem
 
 ## 4. Parte C — Experimentos
 
-### 4.1 Três configurações
+### 4.1 Quatro configurações
 
 | Configuração | O que muda | Composição |
 |---|---|---|
@@ -149,11 +149,11 @@ Para a parte de recorrências, podemos analisar o Merge Sort e explicar a origem
 
 Com esse desenho, nós isolamos uma variável por vez: C1→C2 compara a busca linear com a busca indexada, enquanto C2→C3 compara as estratégias de ordenação sobre a mesma busca indexada.
 
-**C4 não entra na matriz de execução cronometrada da seção 4.2** — ela usa uma biblioteca de terceiros (item 5 da seção 5.2 do enunciado) e serve só de baseline de qualidade para o Precision@5 (seção 4.4). Quem quiser cronometrá-la também pode, mas as 18 execuções obrigatórias são só C1+C2+C3.
+**C4 também entra na matriz de execução cronometrada.** Ela usa uma biblioteca de terceiros (`rank_bm25`) e funciona como baseline externo. O código mede seu tempo de preparação e de consulta, mas não contabiliza comparações internas do `sorted()`.
 
 #### Interface para os experimentos: `src/pipeline.py`
 
-As quatro configurações já estão implementadas e prontas para uso em `src/pipeline.py`, com uma interface única para quem for medir tempo/memória (`experiments/run_experiments.py`) ou calcular Precision@5:
+As quatro configurações já estão implementadas e prontas para uso em `src/pipeline.py`, com uma interface única para medir tempo e memória em `experiments/run_experiments.py`:
 
 ```python
 from ingest import ensure_csv
@@ -199,15 +199,16 @@ Pontos importantes para quem for cronometrar (`experiments/run_experiments.py`):
 
 ### 4.2 Matriz de execução
 
-- **Tamanhos:** `N ∈ {5.000, 50.000}` — dois, o mínimo exigido
-- **Consultas:** **5 fixas**, ex.: *"impeachment de Dilma Rousseff"*, *"operação Lava Jato delação"*, *"reforma da previdência"*, *"crise hídrica em São Paulo"*, *"eleição municipal 2016"*
-- **`k` fixo em 5** — sem experimento de variação de `k`
-- **Repetições:** 3 por cenário (1 aquecimento descartado)
-- **Total: 3 configurações × 2 tamanhos × 3 repetições = 18 execuções**, acima do mínimo de 12
+- **Tamanhos solicitados:** `N ∈ {1.000, 5.000, 10.000, 25.000, 50.000}`; o CSV também registra `n_documentos_reais` após a limpeza.
+- **Configurações:** C1, C2, C3 e C4.
+- **Consultas:** 5 fixas: *"impeachment de Dilma Rousseff"*, *"operação Lava Jato delação"*, *"reforma da previdência"*, *"crise hídrica em São Paulo"* e *"eleição municipal 2016"*.
+- **`k` fixo em 5** — sem experimento de variação de `k`.
+- **Repetições:** 3 por consulta e configuração, com 1 aquecimento descartado.
+- **Execuções medidas:** até `4 configurações × 5 tamanhos × 5 consultas × 3 repetições = 300` linhas no CSV, além dos aquecimentos. Tamanhos efetivos repetidos não geram novas linhas.
 
 ### 4.3 Métricas (uma linha por execução em `results/raw/runs.csv`)
 
-Para cada execução, a seção 7.3 da atividade pede que calculemos: `t_ingestao_ms, t_indice_ou_ordenacao_ms, t_consulta_ms, t_total_ms, memoria_pico_mb, n_comparacoes, n_resultados, precision_at_5, resultado_vazio`
+Para cada execução, o script registra: `t_ingestao_ms, t_indice_ms, t_consulta_ms, t_total_ms, memoria_pico_consulta_mb, n_comparacoes, n_resultados, resultado_vazio`. A ordenação ocorre dentro da consulta e seu custo está incluído em `t_consulta_ms`. A configuração C4 registra `n_comparacoes = 0`, pois a implementação interna de `sorted()` não é instrumentada.
 
 Seria interessante também relacionar cada uma dessas métricas com `config, N, k, query_id, repeticao`, de forma que fique evidente a qual run as métricas se referem.
 
@@ -215,26 +216,21 @@ Sugestões de como calcular as métricas:
 - **Tempo:** `time.perf_counter()`, reportar a mediana das 3 repetições
 - **Memória:** `tracemalloc.get_traced_memory()` — só isso, sem `psutil`
 - **Comparações/operações:** `result.search_comparisons + result.sort_comparisons` (ambos já vêm contados por `src/pipeline.py`, sem precisar de contador manual). Para a busca indexada, a contagem inclui o acesso ao hashmap e as operações realizadas ao percorrer as posting lists.
-- **Ambiente:** `pip freeze > results/requirements-lock.txt` e um `results/environment.txt` com SO, versão do Python, CPU e RAM
 
-### 4.4 Precision@5 — versão simples
+### 4.4 Precision@5 — pendente
 
-1. Para cada uma das 5 consultas, juntar o top-5 de C1, C2, C3 e do `rank_bm25` (≈8–15 documentos únicos após deduplicação).
-2. Cada documento do pool é julgado relevante/não relevante por **dois integrantes**; divergência resolvida por conversa entre os dois.
-3. Salvar em `data/qrels.csv` (`query_id, doc_id, relevante`).
-
-São cerca de 50 julgamentos no total, uma hora de trabalho da equipe. Sem cálculo de concordância entre anotadores — não é exigido.
-
-> Nota metodológica de uma linha no relatório: C1, C2 e C3 devem produzir **exatamente o mesmo ranking**, pois usam a mesma função de relevância. O `Precision@5` mede a qualidade do BM25, não a diferença entre as configurações — o que as diferencia é tempo e memória. Deixar isso explícito evita a interpretação errada dos resultados na banca.
+O código atual ainda não calcula `Precision@5` e não possui arquivo de julgamentos de relevância. Essa avaliação fica como etapa futura; os experimentos atuais medem apenas desempenho, memória, operações, quantidade de resultados e resultados vazios.
 
 ### 4.5 Gráficos
 
-Apesar do mínimo exigido ser um, vamos fazer dois gráficos:
+O script gera quatro gráficos:
 
-1. **Tempo de consulta × N** — uma curva por configuração
-2. **Nº de comparações × N** — mesma estrutura
+1. **Tempo de consulta × N**, em escala linear;
+2. **Tempo de consulta × N**, em escala logarítmica;
+3. **Nº de comparações × N**, em escala linear;
+4. **Nº de comparações × N**, em escala logarítmica.
 
- Esse par de gráficos será o argumento central do trabalho: se as duas curvas tiverem o mesmo formato, a análise do modelo RAM prevê o comportamento real; onde divergirem, teremos o material da discussão sobre fatores fora do modelo RAM.
+Cada gráfico apresenta uma curva por configuração. Esse conjunto será o argumento central do trabalho: se as curvas tiverem o mesmo formato, a análise do modelo RAM prevê o comportamento real; onde divergirem, teremos material para discutir fatores fora do modelo RAM.
 
 ---
 
@@ -283,7 +279,7 @@ PAA_UFS_2026_2_.../
 │  └─ qrels.csv
 ├─ results/
 │  ├─ raw/runs.csv
-│  ├─ environment.txt
+
 │  └─ figures/
 └─ scripts/download_corpus.py
 ```
