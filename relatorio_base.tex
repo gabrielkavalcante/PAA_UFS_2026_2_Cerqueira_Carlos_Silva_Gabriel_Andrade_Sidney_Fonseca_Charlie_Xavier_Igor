@@ -1,6 +1,131 @@
-\section{Algoritmos e Pseudocódigo}
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2cm}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\graphicspath{{results/figures/}{../results/figures/}}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{adjustbox}
+\usepackage{svg}
+\usepackage{float}
+\pgfplotsset{compat=1.18}
 
-\subsection{Busca Linear (Configuração C1)}
+\begin{document}
+
+% ============================================================
+% CAPA
+% ============================================================
+\begin{titlepage}
+\centering
+\includegraphics[width=3cm]{logoUFS-5b7c1d387ab83d8c06b27e6943deddc28337984b1536cf0b2aad371d4db297a0.png}\\[0.8cm]
+{\large UNIVERSIDADE FEDERAL DE SERGIPE}\\
+{\large DEPARTAMENTO DE COMPUTAÇÃO}\\
+{\large PROGRAMA DE PÓS-GRADUAÇÃO EM CIÊNCIA DA COMPUTAÇÃO}\\[3cm]
+
+{\large\bfseries Corretude, eficiência e recuperação de contexto para IA generativa}\\[4cm]
+
+{\large Carlos Adriano Gama Cerqueira}\\
+{\large Gabriel Cavalcante Silva}\\
+{\large Sidney Matheus Santos de Andrade}\\
+{\large Charlie Rodrigues Fonseca}\\
+{\large Igor Rafael Silva Xavier}\\
+
+\vfill
+{\large Aracaju/SE}\\
+{\large \today}
+\end{titlepage}
+
+% ============================================================
+% CONTRACAPA (folha de rosto)
+% ============================================================
+\begin{titlepage}
+\centering
+{\large Carlos Adriano Gama Cerqueira}\\
+{\large Gabriel Cavalcante Silva}\\
+{\large Sidney Matheus Santos de Andrade}\\
+{\large Charlie Rodrigues Fonseca}\\
+{\large Igor Rafael Silva Xavier}\\[3cm]
+
+{\Large\bfseries Corretude, eficiência e recuperação de contexto para IA generativa}\\[3cm]
+
+\begin{minipage}{0.6\textwidth}
+Trabalho apresentado à disciplina de Projeto e Análise de Algoritmos (PAA), como requisito parcial de avaliação da Atividade 1 (AV1), sob orientação do(a) professor(a) Glauco de Figueiredo Carneiro.
+\end{minipage}\\[3cm]
+
+\vfill
+{\large Aracaju/SE}\\
+{\large \today}
+\end{titlepage}
+
+% ============================================================
+% SUMÁRIO
+% ============================================================
+\newpage
+\tableofcontents
+\thispagestyle{empty}
+\newpage
+
+\setcounter{page}{1}
+
+\section{Introdução}
+
+Este trabalho foi desenvolvido pela equipe formada por Carlos Adriano Gama Cerqueira, Gabriel Cavalcante Silva, Sidney Matheus Santos de Andrade, Charlie Rodrigues Fonseca e Igor Rafael Silva Xavier, na disciplina de Projeto e Análise de Algoritmos (PAA), a partir do Tema 6 do enunciado: notícias de fontes públicas. O trabalho está hospedado em \url{https://github.com/gabrielkavalcante/PAA_UFS_2026_2_Cerqueira_Carlos_Silva_Gabriel_Andrade_Sidney_Fonseca_Charlie_Xavier_Igor} (release \texttt{v1.0}, commit \texttt{main}), sob licença MIT, com acesso inicial registrado em 09 de setembro de 2026.
+
+O problema abordado é o de recuperação de contexto para uma aplicação de IA generativa: dado um corpus de notícias e uma consulta em linguagem natural, um sistema precisa decidir quais documentos retornar e em que ordem. Essa decisão passa por escolhas algorítmicas concretas, como qual estratégia de busca usar sobre o corpus e qual algoritmo de ordenação aplicar aos resultados, e essas escolhas têm consequências mensuráveis de tempo, memória e escalabilidade à medida que o corpus cresce. É essa relação entre decisão algorítmica e comportamento prático que este trabalho investiga, implementando quatro variações de um mesmo protótipo de busca e comparando-as entre si.
+
+O corpus utilizado é o \textit{News of the Site Folha de S.Paulo}, extraído do Kaggle \url{marlesson/news-of-the-site-folhauol}, com 167.053 notícias publicadas entre janeiro de 2015 e setembro de 2017. O restante deste relatório está organizado em duas partes: o Desenvolvimento, que cobre a definição formal do problema, a metodologia usada para resolvê-lo e avaliá-lo, e os resultados obtidos com a devida discussão; e a Conclusão, que fecha o trabalho retomando o que foi aprendido. Ao final, seguem as seções administrativas exigidas pelo edital: a declaração de uso de IA generativa, a contribuição de cada integrante, a URL do vídeo e as referências.
+
+\section{Desenvolvimento}
+
+\subsection{Definição do Problema e Representação dos Dados}
+
+O sistema recebe como entrada um corpus $C = \{d_1, d_2, \dots, d_N\}$, uma consulta $q$ com $m$ termos normalizados, um inteiro $k \ge 1$ e os parâmetros $k_1 = 1{,}2$ e $b = 0{,}75$, e deve devolver uma lista $R$ com até $k$ documentos de $C$, ordenada de forma não crescente segundo a função de relevância BM25 (Okapi):
+
+\[
+\text{score}(q, d) = \sum_{t \in q} \text{IDF}(t) \cdot \frac{f(t,d) \cdot (k_1 + 1)}{f(t,d) + k_1 \cdot \left(1 - b + b \cdot \dfrac{|d|}{\text{avgdl}}\right)},
+\]
+
+\[
+\text{IDF}(t) = \ln\left(\frac{N - n_t + 0{,}5}{n_t + 0{,}5} + 1\right),
+\]
+em que $f(t,d)$ é a frequência do termo $t$ no documento $d$, $|d|$ é o número de tokens de $d$, $\text{avgdl}$ é o comprimento médio dos documentos do corpus e $n_t$ é o número de documentos que contêm $t$. Optou-se pela variante do IDF utilizada pelo Lucene, com o termo $+1$ interno ao logaritmo, porque a forma clássica assume valores negativos quando $n_t > N/2$, o que ocorre com frequência em um corpus de notícias em português para termos de alta frequência como "ano" ou "brasil"; nessa situação, o termo passaria a reduzir o score de qualquer documento que o contivesse, comprometendo a corretude semântica da função de relevância.
+
+O problema exige que $C$ não seja vazio, que $\text{avgdl} > 0$, que $k \ge 1$ e que o índice invertido, quando usado, seja construído sobre o mesmo corpus da consulta. Como pós-condições, a saída deve ter no máximo $\min(k, |\{d \in C : \text{score}(q,d) > 0\}|)$ itens, todos pertencentes a $C$ e sem repetições, ordenados de forma não crescente por score, com desempate determinístico por \texttt{doc\_id} crescente em caso de empate. C1, C2 e C3 usam a mesma função de relevância e devem produzir a mesma saída para a mesma tripla $(q, k, C)$; C4 é um baseline externo e pode apresentar diferenças decorrentes da implementação da biblioteca. Seis casos de borda foram considerados na especificação: consulta vazia após normalização, todos os termos da consulta fora do vocabulário do corpus, $k$ maior que $N$, empate de scores, documento com texto vazio e termo repetido na consulta. Eles ainda não foram automatizados em uma suíte de testes.
+
+Os textos originais passam por normalização: título e corpo são convertidos para minúsculas e têm a acentuação removida (Unicode NFD); depois, os dois campos são concatenados, os caracteres que não são palavras ou espaços são removidos por expressão regular, o texto é dividido por espaços e as stopwords do português são removidas. Não é aplicado stemming, decisão que preserva a distinção entre palavras que compartilham o mesmo radical e mantém o escopo do pré-processamento restrito ao estritamente necessário. A unidade de recuperação adotada é o artigo completo: cada notícia é tratada como um único documento, sem fragmentação em blocos de tamanho fixo (\textit{chunking}), já que cada linha do dataset já corresponde a uma notícia curta e autocontida, o que torna essa fragmentação desnecessária para garantir granularidade adequada de busca. Essa escolha tiene, no entanto, um custo sobre o orçamento de tokens de um eventual prompt de IA generativa, discutido mais adiante.
+
+\begin{center}
+\begin{tikzpicture}[node distance=2.2cm, auto,
+    box/.style={rectangle, draw, fill=blue!10, text width=3.2cm, text centered, rounded corners, minimum height=1.5cm},
+    arrow/.style={-{Stealth[scale=1.2]}, thick}]
+
+    \node (raw) [box] {Corpus Bruto (CSV)};
+    \node (norm) [box, right=of raw] {Normalização (minúsculas, sem acento, sem stopword)};
+    \node (tok) [box, right=of norm] {Tokenização};
+    \node (final) [box, below=of tok] {Corpus Processado (artigo completo = 1 documento)};
+
+    \draw [arrow] (raw) -- (norm);
+    \draw [arrow] (norm) -- (tok);
+    \draw [arrow] (tok) -- (final);
+\end{tikzpicture}
+\end{center}
+
+Devido ao volume do corpus completo e ao custo da C1, a equipe trabalha com amostras aleatórias reprodutíveis, usando \texttt{seed=42}, nos tamanhos solicitados de 1.000, 5.000, 10.000, 25.000 e 50.000 documentos. Após a limpeza, os tamanhos efetivos registrados são 993, 4.976, 9.954, 24.873 e 49.741 documentos. O script de ingestão (\texttt{src/ingest.py}) executa a leitura do CSV, a amostragem, a remoção de linhas com texto vazio e de duplicatas exatas de título e texto, e a normalização descrita acima. O corpus bruto (\texttt{articles.csv}) é obtido automaticamente via \texttt{kagglehub} na primeira execução e não é versionado no repositório.
+
+\subsection{Metodologia}
+
+Quatro algoritmos e estruturas foram implementados e combinados em quatro configurações experimentais. A busca linear (\texttt{src/linear\_search.py}, Configuração C1) percorre todos os $N$ documentos do corpus calculando o score BM25 de cada um contra os $m$ termos da consulta, inclusive quando o resultado é zero:
+
 \begin{verbatim}
 função busca_linear(consulta_tokens, corpus):
     resultados ← lista vazia
@@ -9,101 +134,323 @@ função busca_linear(consulta_tokens, corpus):
         resultados.adicionar((d.id, score))
     retornar resultados
 \end{verbatim}
-Complexidade: percorre os $N$ documentos do corpus, calculando o score BM25 de cada um contra os $m$ termos da consulta.
 
-\subsection{Insertion Sort}
-\begin{verbatim}
-função insertion_sort(pares):
-    para j de 1 até n-1:
-        chave ← pares[j]
-        i ← j - 1
-        enquanto i ≥ 0 e vem_depois(pares[i], chave):
-            pares[i+1] ← pares[i]
-            i ← i - 1
-        pares[i+1] ← chave
-    retornar pares
-\end{verbatim}
-O critério \texttt{vem\_depois} implementa a ordem total definida na Seção~6: score decrescente, com desempate por \texttt{doc\_id} crescente. O algoritmo mantém um contador de comparações, utilizado na Seção~14 (Resultados) para amarrar a análise assintótica à medição experimental.
+O índice invertido (\texttt{src/inverted\_index.py}, Configurações C2 e C3) associa cada termo do vocabulário à lista de documentos em que ele aparece, permitindo restringir a busca aos candidatos que compartilham pelo menos um termo com a consulta:
 
-\subsection{Índice Invertido e Busca Binária (Configurações C2 e C3)}
 \begin{verbatim}
 função construir_indice_invertido(corpus):
-    dicionário ← tabela vazia
+    dicionário ← tabela hash vazia
     para cada documento d em corpus:
         para cada termo t em d:
-            dicionário[t].adicionar(d.id)
-    ordenar as chaves de dicionário
+            dicionário[t].adicionar((d.id, frequência))
     retornar dicionário
 
-função buscar_termo(dicionário, termo):
-    retornar busca_binária(chaves_ordenadas(dicionário), termo)
+função busca_indexada(dicionário, consulta_tokens):
+    scores ← tabela hash vazia
+    para cada termo t em consulta_tokens:
+        posting_list ← dicionário.get(t)
+        se posting_list existe:
+            calcular idf(t) uma única vez
+            para cada (doc_id, frequência) em posting_list:
+                scores[doc_id] += contribuição_bm25(idf, frequência, ...)
+    retornar scores
 \end{verbatim}
-A busca binária localiza a posting list do termo em $\Theta(\log V)$, em vez de percorrer todo o corpus.
 
-\subsection{Merge Sort (Configuração C3)}
+Vale registrar que o acesso \texttt{dicionário.get(t)} é uma consulta em tabela hash (\texttt{dict} do Python), não uma busca binária sobre um vetor ordenado de termos: a implementação delega a localização de cada termo ao hashing da própria linguagem, sob a hipótese usual de acesso esperado $\Theta(1)$. Isso ainda atende ao item do enunciado que exige uma busca binária ou indexada, na sua segunda alternativa, e é essa a estratégia efetivamente analisada adiante.
+
+A ordenação dos candidatos por score usa Insertion Sort (Configurações C1 e C2) ou Merge Sort (Configuração C3), ambos implementados em \texttt{src/sorting.py} com o mesmo comparador \texttt{comes\_after}, que decide se um par deve vir depois de outro segundo score decrescente, com desempate por \texttt{doc\_id} crescente:
+
 \begin{verbatim}
+função insertion_sort(pares):
+    result ← cópia de pares
+    para j de 1 até n-1:
+        chave ← result[j]
+        i ← j - 1
+        enquanto i >= 0 e comes_after(result[i], chave):
+            result[i+1] ← result[i]
+            i ← i - 1
+        result[i+1] ← chave
+    retornar result
+
 função merge_sort(pares):
-    se |pares| ≤ 1: retornar pares
-    meio ← |pares| / 2
-    esquerda ← merge_sort(pares[0:meio])
-    direita ← merge_sort(pares[meio:])
-    retornar mesclar(esquerda, direita)
+    result ← cópia de pares
+    _merge_sort(result, 0, n)
+    retornar result
+
+função _merge_sort(result, start, end):
+    se end - start <= 1: retornar
+    mid ← (start + end) // 2
+    _merge_sort(result, start, mid)
+    _merge_sort(result, mid, end)
+    _merge(result, start, mid, end)
 \end{verbatim}
 
-\section{Justificativa de Corretude}
+Uma quarta configuração, C4, usa a biblioteca \texttt{rank\_bm25} (BM25Okapi) combinada com o \texttt{sorted()} nativo do Python, como baseline externo de comparação.
 
-Apresenta-se a prova de corretude do Insertion Sort, por invariante de laço.
+A corretude das duas rotinas de ordenação foi demonstrada formalmente. Define-se sobre os pares (\texttt{doc\_id}, \texttt{score}) a relação de ordem total $\prec$, dada por $a \prec b \iff (s_a > s_b) \lor (s_a = s_b \land d_a < d_b)$, a ordem lexicográfica das chaves $(-\text{score}, \texttt{doc\_id})$; a função \texttt{comes\_after(a, b)} verifica a relação inversa, $b \prec a$. A pós-condição da ordenação exige que a saída tenha o mesmo multiconjunto de pares da entrada e que nenhum elemento posterior preceda um anterior segundo $\prec$.
 
-\textbf{O que se quer provar:} ao final da execução, a lista de pares (\texttt{doc\_id}, \texttt{score}) está ordenada de forma não crescente por score e é uma permutação da entrada.
+Para o Insertion Sort, prova-se por invariante de laço que, no início da iteração de índice $j$, o prefixo \texttt{result[0:j]} está ordenado segundo $\prec$ e é permutação de \texttt{A[0:j]}, enquanto o sufixo \texttt{result[j:n]} permanece igual ao original. \textbf{Inicialização.} Para $n \ge 2$, a primeira iteração tem $j=1$: o prefixo unitário está trivialmente ordenado, e a cópia inicial preserva prefixo e sufixo. \textbf{Manutenção.} Enquanto \texttt{comes\_after(result[i], key)} for verdadeiro, o elemento é deslocado para a direita e $i$ decresce; os elementos deslocados são exatamente os que devem suceder a chave, o multiconjunto é mantido porque nenhum elemento é criado ou descartado, e ao encontrar a posição correta a chave é inserida ali, ampliando o prefixo ordenado. \textbf{Terminação.} O laço externo executa $n-1$ iterações, cada deslocamento reduz a variante inteira não negativa $i+1$ do laço interno, e há no máximo $j$ deslocamentos por iteração externa, logo ambos os laços terminam, e o resultado final satisfaz a especificação.
 
-\textbf{Hipóteses:} o comparador implementa uma ordem total (score decrescente, desempate por \texttt{doc\_id} crescente); os scores são valores finitos.
+Para o Merge Sort, a prova segue por indução forte sobre $n = \text{end} - \text{start}$. \textbf{Caso base.} Para $n \le 1$, o intervalo vazio ou unitário já está ordenado e nada é modificado. \textbf{Passo indutivo.} Para $n \ge 2$, a divisão ao meio gera dois subproblemas menores que, pela hipótese de indução, retornam ordenados e preservando seus elementos; a intercalação compara a cada passo os elementos ainda não consumidos das duas metades, sempre escrevendo o menor deles segundo $\prec$, e quando uma metade se esgota o restante da outra, já ordenado, é copiado por inteiro. Como todos os $n$ elementos são copiados exatamente uma vez, o multiconjunto e a ordem são preservados, e como o tamanho do intervalo decresce na recursão e o número de elementos não consumidos decresce na intercalação, a recursão termina.
 
-\textbf{Invariante de laço:} no início de cada iteração do laço externo com índice $j$, o subvetor $A[1..j-1]$ contém os mesmos elementos que continha originalmente, agora em ordem não crescente de score.
+As duas provas cobrem apenas a ordenação dos pares fornecidos, não a adequação semântica do BM25 nem a corretude de toda a recuperação; valores \texttt{NaN} ficam fora da especificação, e a terminação pressupõe recursos suficientes de memória e pilha de recursão.
 
-\begin{itemize}
-    \item \textbf{Inicialização:} $j = 2$, logo $A[1..1]$ tem um único elemento e está trivialmente ordenado.
-    \item \textbf{Manutenção:} o laço interno desloca à direita todos os elementos de $A[1..j-1]$ que devem vir depois de $A[j]$ segundo o comparador, inserindo $A[j]$ na posição correta. Nenhum elemento é criado ou perdido, e o subvetor $A[1..j]$ permanece ordenado.
-    \item \textbf{Terminação:} o laço termina com $j = n+1$; pelo invariante, $A[1..n]$ está ordenado e é permutação da entrada. $\blacksquare$
-\end{itemize}
+A análise de custo segue uma abstração do modelo RAM em que comparações, atribuições, aritmética, acessos indexados e chamadas às funções \texttt{idf} e \texttt{tf} têm custo unitário, com a hipótese adicional, para \texttt{dict} e \texttt{Counter} do Python, de acesso esperado e inserção amortizada constantes. Os parâmetros usados são $N$, o número de documentos do corpus; $m$, o número de tokens da consulta com repetições; $P$, a soma dos tamanhos das posting lists efetivamente percorridas; $C$, o número de documentos distintos nessas listas; $n$, o número de pares entregues à ordenação (igual a $N$ em C1 e a $C$ em C2 e C3); e $k$, o limite de resultados solicitado. Vale $C \le \min(N,P)$ e $P \le mN$.
 
-\textbf{Limites do argumento:} a prova assume aritmética exata. Em ponto flutuante IEEE-754, dois documentos podem receber scores que diferem no último bit conforme a ordem de acumulação dos termos da consulta; por isso, a ordem de iteração sobre os termos é fixada na implementação. A prova cobre apenas a corretude da ordenação, não a corretude do cálculo do score BM25 em si.
+A busca linear examina os $m$ tokens da consulta contra cada um dos $N$ documentos, resultando em $T_{\text{linear}}(N,m) = \Theta(N(1+m))$, forma que já cobre o caso $m=0$ e que, para $m \ge 1$, equivale a $\Theta(Nm)$. A busca indexada gera um acesso por token à tabela hash do índice invertido e, quando a posting list existe, percorre suas entradas: $T_{\text{indexada}}(m,P) = \Theta(m+P)$, com melhor caso $\Theta(m)$ quando $P=0$ e pior caso $\Theta(mN)$ quando o volume de postings é máximo, sempre sob a hipótese de hashing esperado. Em espaço, a busca linear usa $\Theta(N)$ adicional, a busca indexada usa $\Theta(1+C)$, e o índice persistente, com $V$ termos de vocabulário e $Q$ pares termo-documento distintos, ocupa $\Theta(1+V+Q)$, construído em tempo esperado $\Theta(1+N+Q)$ separadamente do custo de cada consulta. Ficam fora desse modelo a leitura do CSV a partir do disco, a localidade de cache, o overhead do interpretador Python e do coletor de lixo, o custo de hashing de strings e a ausência de paralelismo.
 
-\section{Análise no Modelo RAM}
+Para o Insertion Sort, o melhor caso ocorre com a entrada já ordenada segundo $\prec$, com uma única comparação por iteração e tempo $\Theta(n)$; o pior caso, com as chaves em ordem inversa, exige $j$ deslocamentos na posição $j$, totalizando $n(n-1)/2$ comparações e tempo $\Theta(n^2)$; e o caso médio, sob permutação uniforme de chaves distintas, tem o mesmo $\Theta(n^2)$, já que o número esperado de inversões é $n(n-1)/4$ e cada deslocamento elimina uma. Para o Merge Sort, como cada chamada de intercalação copia e processa o intervalo inteiro independentemente da ordem de entrada, melhor, médio e pior caso coincidem em $\Theta(n\log_2 n)$.
 
-\textbf{Parâmetros:} $N$ (documentos do corpus), $L$ (total de tokens do corpus), $m$ (termos da consulta), $k$ (resultados retornados), $V$ (tamanho do vocabulário), $n_t$ (tamanho da posting list do termo $t$).
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{crescimento_assintotico.png}
+\caption{Comparação do crescimento assintótico entre $n^2$ (Insertion Sort, pior e médio caso) e $n\log_2 n$ (Merge Sort).}
+\end{figure}
 
-\textbf{Operações elementares consideradas:} comparação de scores, acesso indexado a vetor, lookup em tabela hash, atribuição, chamada recursiva.
+Esse resultado é obtido a partir da recorrência $T(n) = 2T(n/2) + \Theta(n)$: pelo caso balanceado do Teorema Mestre, com $a=2$, $b=2$ e $f(n)=\Theta(n)$ coincidindo com $n^{\log_2 2}=n$, tem-se $T(n) = \Theta(n\log_2 n)$. Na árvore de recursão, cada um dos $\log_2 n$ níveis internos realiza trabalho $\Theta(n)$, e as $n$ folhas custam $\Theta(1)$ cada, confirmando o mesmo resultado.
 
-\textbf{Fatores fora do modelo RAM:} leitura do CSV a partir do disco, localidade de cache, overhead do interpretador Python e do coletor de lixo, custo de hashing de strings, ausência de paralelismo.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.75\textwidth]{arvore_recursao_merge_sort.png}
+\caption{Árvore de recursão do Merge Sort: cada nível soma trabalho $\Theta(n)$, com $\log_2 n$ níveis internos.}
+\end{figure}
 
-\section{Melhor, Pior e Caso Médio}
+Como o código usa divisão inteira sem exigir $n$ par, a recorrência com piso e teto, $T(n)=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+\Theta(n)$, preserva $\Theta(n\log n)$ pelo mesmo argumento, compatível com resultados gerais para recorrências de divisão e conquista com partições desiguais (Roura, 2001). A variável $n$ dessa recorrência é a entrada real da ordenação, $N$ em C1 e $C$ em C2 e C3, e ela prevê apenas o crescimento assintótico, não um tempo em segundos; a comparação entre C2 e C3 só é válida quando consultas, corpus e candidatos são os mesmos. Não há, associada à busca indexada, uma recorrência de bisseção do tipo $T(n)=T(n/2)+\Theta(1)$, já que \texttt{indexed\_search} usa tabela hash e não busca binária.
+
+Em espaço, o Insertion Sort copia $n$ referências ($\Theta(n)$ adicional); o Merge Sort soma a essa cópia inicial os slices e a pilha de recursão de profundidade $\Theta(\log n)$, resultando em pico $\Theta(n)$, já que os slices de níveis diferentes não coexistem; e o pós-processamento final, que filtra os candidatos com score positivo e corta a lista em $k$ itens, percorre os $n$ resultados em $\Theta(n)$, sem evitar a ordenação completa da lista antes do corte. O contador de comparações instrumentado em \texttt{src/sorting.py} registra apenas as chamadas a \texttt{comes\_after}, não cada comparação primitiva interna; na biblioteca externa usada em C4, essa métrica simplesmente não é instrumentada, o que aparece como zero nos resultados sem significar ausência de trabalho computacional.
+
+A avaliação experimental compara as quatro configurações (C1, busca linear com Insertion Sort; C2, índice invertido com Insertion Sort restrito aos candidatos; C3, índice invertido com Merge Sort; e C4, a biblioteca externa) em cinco tamanhos solicitados ($N \in \{1.000, 5.000, 10.000, 25.000, 50.000\}$), cinco consultas fixas representativas do acervo jornalístico, $k=5$ e três repetições por consulta após um aquecimento descartado. As consultas formuladas foram: $q_1$: ``impeachment de Dilma Rousseff'', $q_2$: ``operação Lava Jato delação'', $q_3$: ``reforma da previdência'', $q_4$: ``crise hídrica em São Paulo'' e $q_5$: ``eleição municipal 2016''. São até $4 \times 5 \times 5 \times 3 = 300$ execuções cronometradas; tamanhos efetivos repetidos são ignorados. Para cada execução são coletados o tempo de ingestão, o tempo de construção do índice, o tempo de consulta, o tempo total calculado como preparação mais uma consulta, a memória de pico da consulta via \texttt{tracemalloc}, o número de comparações, o número de resultados retornados e a taxa de resultados vazios. A ordenação ocorre dentro de \texttt{run()} e, portanto, seu tempo está incluído em \texttt{t\_consulta\_ms}.
+
+Além do desempenho computacional, a metodologia contemplou a avaliação da qualidade da recuperação e distribuição de tokens, implementada em \texttt{experiments/quality\_analysis.py}, abrangendo:
+\begin{enumerate}
+    \item \textbf{Tokenização e distribuição de tokens por artigo:} para quantificar o impacto da decisão de tratar cada notícia normalizada como um documento único, sem divisão em \textit{chunks} sobre o consumo de contexto em sistemas RAG, o script computa a distribuição de tokens por documento para cada $N$, extraindo média, desvio padrão, mediana, quartis (Q1, Q3), percentil 95\% e comprimento máximo.
+    \item \textbf{Construção do pool de relevância:} para cada par $(q, N)$, os resultados do top-5 retornados por C1, C2, C3 e C4 foram unificados e deduplicados por \texttt{doc\_id} em \texttt{data/pool\_judgments.csv}, totalizando 132 documentos únicos a avaliar.
+    \item \textbf{Anotação manual de relevância do documento:} a relevância de cada documento em relação à consulta correspondente foi julgada manualmente pelos integrantes da equipe, conferindo título, data e o texto original da notícia da Folha de S.Paulo via link, atribuindo rótulo binário (1 para relevante, 0 para irrelevante).
+    \item \textbf{Cálculo de Precision@5:} executado por \texttt{experiments/compute\_precision.py}, computando $\text{P@5} = \frac{\text{relevantes no top-5}}{5}$ para cada consulta, configuração e tamanho de corpus, além da média macro entre as cinco consultas. Como C1, C2 e C3 aplicam exatamente a mesma formulação de BM25 sobre os mesmos dados sob desempate determinístico, a teoria prevê rankings idênticos entre si, enquanto C4 pode divergir pelas particularidades de sua biblioteca.
+    \item \textbf{Investigação de \textit{vocabulary mismatch}:} verificação sistemática de termos da consulta ausentes dos documentos recuperados no top-5 (\texttt{results/raw/vocab\_mismatch.csv}) e identificação qualitativa de falsos positivos decorrentes de polissemia e sinonímia.
+\end{enumerate}
+
+A coleta foi realizada em Linux 44 (kernel 7.2.5), com Python 3.14.7, processador Intel(R) Core(TM) i9-14900K, 32 núcleos lógicos e 31,05~GB de RAM. As principais versões utilizadas foram pandas 3.0.5, matplotlib 3.11.2, NLTK 3.10.3 e rank-bm25 0.2.2; o ambiente foi resolvido com uv 0.7.16. Os experimentos foram orquestrados pelos scripts em \texttt{experiments/}: medição de desempenho (\texttt{run\_experiments.py}), geração dos gráficos comparativos (\texttt{make\_plots.py}), análise de tokens e mismatch (\texttt{quality\_analysis.py}) e consolidação da precisão (\texttt{compute\_precision.py}).
+
+\subsection{Resultados}
+
+As 300 execuções estão registradas em \texttt{results/raw/runs.csv}. A tabela apresenta a mediana das três repetições por configuração e tamanho efetivo do corpus. Os tempos estão em milissegundos.
 
 \begin{center}
-\begin{tabular}{lllll}
-\textbf{Algoritmo} & \textbf{Melhor} & \textbf{Pior} & \textbf{Médio} & \textbf{Espaço} \\
+\scriptsize
+\begin{tabular}{lrrrrr}
+\textbf{Config.} & \textbf{N real} & \textbf{T. consulta} & \textbf{T. total} & \textbf{Mem. pico} & \textbf{Comparações} \\
 \hline
-Ingestão + tokenização & $\Theta(L)$ & $\Theta(L)$ & $\Theta(L)$ & $\Theta(L)$ \\
-Busca linear (scoring) & $\Theta(N \cdot m)$ & $\Theta(N \cdot m)$ & $\Theta(N \cdot m)$ & $\Theta(N)$ \\
-Busca indexada & $\Theta(m \log V)$ & $\Theta(m \log V + \sum n_t)$ & $\Theta(m \log V + \sum n_t)$ & $\Theta(L)$ \\
-Insertion Sort & $\Theta(N)$ & $\Theta(N^2)$ & $\Theta(N^2)$ & $\Theta(1)$ \\
-Merge Sort & $\Theta(N \log N)$ & $\Theta(N \log N)$ & $\Theta(N \log N)$ & $\Theta(N)$ \\
+C1 & 993    & 4,435 & 2.915,612 & 0,0386 & 82.283 \\
+C1 & 4.976  & 272,957 & 3.788,113 & 0,4225 & 1.755.128 \\
+C1 & 9.954  & 1.037,603 & 8.696,541 & 0,9797 & 6.808.874 \\
+C1 & 24.873 & 6.880,539 & 22.881,675 & 2,6566 & 42.471.941 \\
+C1 & 49.741 & 25.147,776 & 55.345,369 & 5,4446 & 164.720.059 \\
+C2 & 993    & 0,286 & 2.709,715 & 0,0075 & 5.074 \\
+C2 & 4.976  & 8,513 & 4.025,404 & 0,0662 & 134.998 \\
+C2 & 9.954  & 62,888 & 9.270,479 & 0,1346 & 559.617 \\
+C2 & 24.873 & 425,980 & 16.784,751 & 0,3534 & 3.390.650 \\
+C2 & 49.741 & 725,184 & 30.423,257 & 0,8185 & 12.979.567 \\
+C3 & 993    & 0,150 & 2.709,579 & 0,0097 & 1.254 \\
+C3 & 4.976  & 0,992 & 4.017,884 & 0,0744 & 7.921 \\
+C3 & 9.954  & 2,522 & 9.210,113 & 0,1512 & 16.935 \\
+C3 & 24.873 & 14,041 & 16.372,812 & 0,4521 & 46.706 \\
+C3 & 49.741 & 12,228 & 29.710,301 & 0,8185 & 98.641 \\
+C4 & 993    & 0,394 & 2.681,030 & 0,0940 & 0$^{*}$ \\
+C4 & 4.976  & 3,836 & 6.678,640 & 1,0114 & 0$^{*}$ \\
+C4 & 9.954  & 9,332 & 10.396,794 & 2,1596 & 0$^{*}$ \\
+C4 & 24.873 & 31,881 & 19.400,149 & 5,6054 & 0$^{*}$ \\
+C4 & 49.741 & 40,996 & 27.650,445 & 11,3481 & 0$^{*}$ \\
 \end{tabular}
 \end{center}
+{\footnotesize $^{*}$ A biblioteca externa não expõe as comparações internas de \texttt{sorted()}; zero não indica ausência de trabalho computacional.\par}
 
-O ganho da busca indexada sobre a busca linear decorre de $\sum n_t \ll N \cdot m$: a maioria dos termos aparece em poucos documentos, seguindo aproximadamente uma distribuição de Zipf — hipótese sobre a distribuição dos dados que sustenta o caso médio.
+Nenhuma das 300 execuções cronometradas retornou resultado vazio ($0\%$ de taxa de falha), e todas as configurações devolveram exatamente $k=5$ resultados por consulta, cumprindo integralmente as pós-condições formuladas.
 
-\section{Recorrências}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{tempo_consulta_vs_n_linear.png}
+	\caption{Tempo de consulta (mediana) por configuração e tamanho real do corpus, em escala linear.}
+\end{figure}
 
-\textbf{Merge Sort:} $T(N) = 2T(N/2) + \Theta(N)$, originada pelas duas chamadas recursivas sobre as metades da lista somadas ao custo linear da fusão. Pelo Teorema Mestre, caso 2 ($a=2$, $b=2$, $f(N)=\Theta(N)$), resolve-se em $T(N) = \Theta(N \log N)$.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{tempo_consulta_vs_n_log.png}
+	\caption{Tempo de consulta (mediana) por configuração e tamanho real do corpus, em escala logarítmica.}
+\end{figure}
 
-\textbf{Busca binária no dicionário de termos:} $T(n) = T(n/2) + \Theta(1)$, originada pela bisseção do intervalo de busca a cada chamada. Pelo Teorema Mestre, caso 2 ($a=1$, $b=2$, $f(n)=\Theta(1)$), resolve-se em $T(n) = \Theta(\log n)$.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{comparacoes_vs_n_linear.png}
+	\caption{Número de comparações por configuração e tamanho real do corpus, em escala linear.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{comparacoes_vs_n_log.png}
+	\caption{Número de comparações por configuração e tamanho real do corpus, em escala logarítmica.}
+\end{figure}
+
+\subsubsection{Distribuição de Tokens por Documento}
+
+A Tabela~\ref{tab:tokens} consolida as métricas de comprimento dos artigos processados pelo pipeline para os cinco tamanhos de corpus investigados, após normalização e remoção de stopwords.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Estatísticas de tokens por artigo após normalização e remoção de stopwords.}
+\label{tab:tokens}
+\begin{tabular}{rrrrrrrrr}
+\hline
+\textbf{N solic.} & \textbf{N real} & \textbf{Média} & \textbf{Desv. P.} & \textbf{Q1} & \textbf{Mediana} & \textbf{Q3} & \textbf{P95} & \textbf{Máx.} \\
+\hline
+1.000  & 993    & 267,8 & 179,2 & 153,0 & 244,0 & 341,0 & 557,2 & 2.933 \\
+5.000  & 4.976  & 268,4 & 177,5 & 156,8 & 240,0 & 339,0 & 566,0 & 3.592 \\
+10.000 & 9.954  & 265,9 & 172,8 & 157,0 & 238,0 & 334,0 & 548,4 & 3.592 \\
+25.000 & 24.873 & 268,7 & 189,6 & 157,0 & 238,0 & 337,0 & 563,0 & 7.612 \\
+50.000 & 49.741 & 267,8 & 187,6 & 156,0 & 238,0 & 336,0 & 558,0 & 7.612 \\
+\hline
+\end{tabular}
+\end{table}
+
+Observa-se elevada estabilidade da média ($\approx 266\text{--}269$ tokens) e da mediana ($\approx 238\text{--}244$ tokens) independentemente do tamanho amostral. Destaca-se que 75\% dos artigos contêm no máximo 341 tokens (Q3) e 95\% deles têm menos de 566 tokens (P95), com poucos artigos estendendo-se na cauda longa até o máximo observado de 7.612 tokens.
+
+\subsubsection{Avaliação de Qualidade: Precision@5}
+
+A partir do pool de 132 documentos únicos julgados manualmente, a Tabela~\ref{tab:precision} resume a média macro de Precision@5 sobre as cinco consultas para cada configuração e tamanho de corpus.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Precision@5 (média macro sobre as 5 consultas) por configuração e tamanho de corpus.}
+\label{tab:precision}
+\begin{tabular}{lrrrrr}
+\hline
+\textbf{Configuração} & \textbf{N=1.000} & \textbf{N=5.000} & \textbf{N=10.000} & \textbf{N=25.000} & \textbf{N=50.000} \\
+\hline
+C1 (Busca linear + Insertion)   & 0,76 & 0,96 & 1,00 & 0,96 & 1,00 \\
+C2 (Índice hash + Insertion)    & 0,76 & 0,96 & 1,00 & 0,96 & 1,00 \\
+C3 (Índice hash + Merge Sort)   & 0,76 & 0,96 & 1,00 & 0,96 & 1,00 \\
+C4 (rank\_bm25 + sorted)        & 0,72 & 0,92 & 1,00 & 0,96 & 1,00 \\
+\hline
+\end{tabular}
+\end{table}
+
+Conforme esperado, C1, C2 e C3 obtêm exatamente a mesma precisão em todos os cenários, comprovando que as três variantes produzem rankings idênticos e diferem unicamente em tempo e memória. C4 diverge ligeiramente em $N=1.000$ ($0{,}72$ vs $0{,}76$) e em $N=5.000$ ($0{,}92$ vs $0{,}96$), convergindo para valores idênticos nos corpora maiores.
+
+O comportamento individual por consulta revela assimetrias de dificuldade:
+\begin{itemize}
+    \item \textbf{Consulta 1 (``impeachment de Dilma Rousseff'') e Consulta 3 (``reforma da previdência''):} obtiveram $\text{P@5} = 1{,}00$ (5 de 5 relevantes) em todos os tamanhos de corpus, demonstrando alta precisão mesmo na menor amostra.
+    \item \textbf{Consulta 2 (``operação Lava Jato delação''):} obteve $\text{P@5} = 0{,}80$ em $N=1.000$ (4 de 5 relevantes para C1--C3 e 3 de 5 para C4) e atingiu $\text{P@5} = 1{,}00$ para $N \ge 5.000$.
+    \item \textbf{Consulta 4 (``crise hídrica em São Paulo''):} registrou $\text{P@5} = 0{,}60$ em $N=1.000$ (3 de 5 relevantes), subindo para $\text{P@5} = 1{,}00$ em todos os tamanhos subsequentes ($N \ge 5.000$).
+    \item \textbf{Consulta 5 (``eleição municipal 2016''):} configurou-se como a mais desafiadora, registrando $\text{P@5} = 0{,}40$ em $N=1.000$ (2 de 5 relevantes), $0{,}80$ em $N=5.000$ e $N=25.000$, e atingindo $1{,}00$ em $N=10.000$ e $N=50.000$.
+\end{itemize}
+
+
+
+\subsection{Discussão}
+
+Os resultados confirmam a diferença esperada entre as configurações. Comparando os tamanhos reais de 993 e 49.741 documentos, o tempo de consulta da C1 cresce de 4,435~ms para 25.147,776~ms, aproximadamente 5.670 vezes, enquanto o número de comparações cresce de 82.283 para 164.720.059. Esse comportamento é compatível com o custo quadrático do Insertion Sort aplicado a todos os documentos após a busca linear. A C2 reduz o tempo de consulta para 725,184~ms no maior corpus e o número de comparações para 12.979.567, pois o índice invertido restringe a ordenação aos candidatos. A C3 chega a 12,228~ms e 98.641 comparações no mesmo tamanho, mostrando o ganho adicional do Merge Sort sobre a lista de candidatos. A pequena redução do tempo da C3 entre 24.873 e 49.741 documentos deve ser tratada como variação de medição, não como crescimento monotônico garantido.
+
+No maior corpus, a C1 é aproximadamente 34,7 vezes mais lenta que a C2 e 2.056,6 vezes mais lenta que a C3. Em número de comparações, as diferenças são de aproximadamente 12,7 vezes contra C2 e 1.669,9 vezes contra C3. Esses valores mostram que as duas mudanças contribuem para o ganho: o índice invertido reduz o número de candidatos examinados, enquanto o Merge Sort evita o comportamento quadrático do Insertion Sort. A C4 apresenta apenas 40,996~ms de consulta no maior corpus, mas utiliza uma implementação externa e não expõe suas comparações internas; sua memória de pico, 11,3481~MB, também é maior que a de C2 e C3, que registraram 0,8185~MB.
+
+Os tempos totais da tabela não representam o tempo de todo o experimento: são calculados pelo script como o custo de preparação do corpus, construção do índice quando aplicável e uma consulta. A comparação de tempo de consulta deve, portanto, usar principalmente \texttt{t\_consulta\_ms}, enquanto \texttt{t\_total\_ms} deve ser interpretado como custo de preparação amortizado para uma consulta.
+
+Essa relação entre desempenho e recuperação de contexto tem implicações diretas para uma aplicação de IA generativa construída sobre este protótipo. Os documentos recuperados entrariam no prompt de um LLM por meio de um template estruturado, como \texttt{[n] título | data | categoria | texto | link}, com uma instrução para que o modelo cite o índice $[n]$ usado em cada afirmação, permitindo rastrear a origem do que foi gerado. 
+
+\subsubsection{Impacto do Tamanho do Corpus na Precisão e Vocabulary Mismatch}
+
+A análise de qualidade via Precision@5 (Tabela~\ref{tab:precision}) revela que o tamanho do corpus exerce influência decisiva sobre a precisão da recuperação. Em amostras pequenas ($N=1.000$, 993 documentos reais), a precisão média foi de $0{,}76$ para as três variantes de implementação própria (C1, C2 e C3) e $0{,}72$ para a biblioteca externa (C4). Com uma amostragem restrita, a densidade de notícias diretamente pertinentes ao núcleo do evento é baixa; consequentemente, o modelo BM25 acaba elevando para o top-5 documentos que compartilham apenas termos genéricos com a consulta (como ``São Paulo'', ``crise'' ou o ano ``2016''), gerando falsos positivos. À medida que o corpus se expande ($N \ge 5.000$), a probabilidade de existirem múltiplos documentos altamente relevantes cresce expressivamente, fazendo com que a precisão suba para $0{,}96$ e atinja $1{,}00$ em $N=10.000$ e $N=50.000$.
+
+Além do tamanho do corpus, a especificidade temática de cada consulta determinou graus de dificuldade substancialmente distintos:
+\begin{itemize}
+    \item As consultas com vocabulário técnico e estrito, como a Consulta 1 (``impeachment de Dilma Rousseff'') e a Consulta 3 (``reforma da previdência''), obtiveram $\text{P@5} = 1{,}00$ mesmo na menor amostra ($N=1.000$), pois termos como ``impeachment'' e ``previdência'' apresentam alto poder discriminativo (IDF elevado) e baixa dispersão fora de seus contextos específicos.
+    \item Em contrapartida, a Consulta 4 (``crise hídrica em São Paulo'', $\text{P@5} = 0{,}60$ em $N=1.000$) e a Consulta 5 (``eleição municipal 2016'', $\text{P@5} = 0{,}40$ em $N=1.000$) enfrentaram o impacto simultâneo de polissemia e \textit{vocabulary mismatch}. Embora a verificação automática de vocabulário (\texttt{results/raw/vocab\_mismatch.csv}) tenha apontado $n_{\text{missing}} = 0$ (todos os termos da consulta foram encontrados nos textos recuperados), o descompasso deu-se no plano semântico: termos como ``São Paulo'' e ``crise'' atraíram notícias sobre crises políticas ou institucionais, enquanto matérias sobre a crise da água frequentemente empregavam vocabulário sinônimo e correlato (``estiagem'', ``seca'', ``racionamento'', ``Sistema Cantareira'') sem repetir explicitamente a locução da consulta. Da mesma forma, na Consulta 5, a presença do token numérico ``2016'' (frequente em datas e rodapés) e de ``municipal'' atraiu notícias sobre inauguração de equipamentos urbanos e salas de cinema, alheias ao pleito eleitoral.
+\end{itemize}
+
+Essa constatação ressalta o limite intrínseco de modelos puramente lexicais como o BM25: a incapacidade de capturar sinonímia e proximidade conceitual sem módulos de expansão de consulta ou busca vetorial densa por embeddings.
+
+\subsubsection{Distribuição de Tokens e Dimensionamento do Contexto em RAG}
+
+Os dados empíricos de distribuição do comprimento textual (Tabela~\ref{tab:tokens}) trazem subsídios concretos para dimensionar o consumo de contexto em sistemas generativos e fundamentam rigorosamente a decisão arquitetural da equipe de \textbf{não aplicar chunking} no pré-processamento. A distribuição demonstra que a vasta maioria das notícias do acervo é concisa e autocontida: a mediana oscila estavelmente entre $238$ e $244$ tokens, 75\% dos artigos contêm até $341$ tokens (Q3 $\approx$ 334--341) e 95\% não ultrapassam $566$ tokens (P95 $\approx$ 548--566).
+
+Em termos práticos, em uma aplicação RAG que recupera $k=5$ notícias inteiras para compor o prompt de um LLM, o consumo médio esperado de contexto situa-se em torno de $1.200$ a $1.340$ tokens, e mesmo no cenário conservador do 95º percentil raramente atinge $2.830$ tokens. Modelos generativos contemporâneos operam confortavelmente com janelas de dezenas a centenas de milhares de tokens, de modo que esse volume não representa sobrecarga orçamentária ou risco de estouro de contexto. A manutenção de cada notícia como unidade integral de recuperação preserva a completude semântica da narrativa jornalística e os metadados associados (título, data e link para citação conferível), eliminando a necessidade de gerenciar identificadores compostos ou recombinar trechos fragmentados. Para os raros casos na cauda longa da distribuição (comprimento máximo isolado de $7.612$ tokens), uma salvaguarda simples de truncamento de segurança no prompt em nível de produção assegura a previsibilidade orçamentária sem exigir a fragmentação sistemática do corpus.
+
+\section{Conclusão}
+
+Este trabalho implementou e comparou quatro configurações de um protótipo de recuperação de contexto baseado em BM25, cobrindo busca linear, índice invertido, Insertion Sort, Merge Sort e uma biblioteca externa de referência, com prova formal de corretude para as duas rotinas de ordenação e análise de custo no modelo RAM, incluindo melhor, pior e caso médio e a recorrência do Merge Sort. As 300 execuções realizadas confirmaram a diferença de desempenho prevista pela teoria: o índice invertido reduz o conjunto de candidatos e o Merge Sort evita o comportamento quadrático do Insertion Sort quando esse conjunto cresce. Isso demonstra concretamente como decisões de algoritmo e estrutura de dados definem a escalabilidade de um sistema de recuperação de contexto para RAG.
+
+A extensão experimental à qualidade da recuperação e à distribuição de tokens complementou a análise de escalabilidade algorítmica. A avaliação de Precision@5, sustentada pela anotação manual com supervisão humana estrita de 132 documentos únicos, demonstrou que a ampliação do corpus favorece a precisão da recuperação — subindo de $0{,}76$ em $N=1.000$ até $1{,}00$ em $N=50.000$ —, evidenciando simultaneamente os limites de abordagens puramente lexicais diante de polissemia e \textit{vocabulary mismatch}. Por sua vez, a caracterização empírica de tokens (75\% dos artigos com $\le 341$ tokens e 95\% com $\le 566$ tokens) ofereceu respaldo quantitativo para manter as notícias íntegras sem \textit{chunking}, garantindo fidelidade de contexto e previsibilidade de custos em sistemas generativos. O estudo ilustra concretamente como escolhas de estruturas de dados e algoritmos governam tanto a eficiência computacional quanto a adequação semântica na recuperação de contexto para IA generativa.
 
 \section{Limitações e Ameaças à Validade}
 
 \begin{itemize}
-    \item O corpus original possui 167.053 notícias; por questões de tempo de execução e risco de estouro de memória, os experimentos utilizam duas amostras aleatórias fixas de 5.000 e 50.000 documentos, que não representam o corpus completo.
-    \item O acervo cobre o período de janeiro de 2015 a setembro de 2017, o que limita a generalização dos resultados para conteúdo atual.
-    \item O corpus provém de uma única fonte jornalística (Folha de S.Paulo), com viés editorial próprio e cobertura geográfica concentrada em Sudeste e Brasília.
-    \item O BM25 é uma função de relevância puramente lexical, sujeita ao problema de \textit{vocabulary mismatch} (discutido na Seção~\ref{sec:rag}).
-    \item Fatores de hardware, interpretador e ausência de paralelismo (Seção~10) introduzem variabilidade nas medições de tempo, mitigada por aquecimento e mediana de repetições.
+    \item \textbf{Amostragem do acervo:} o corpus original reúne 167.053 notícias da Folha de S.Paulo; devido a restrições de tempo de execução e memória, os experimentos utilizaram amostras fixas de até 50.000 documentos, que não cobrem a integralidade do acervo.
+    \item \textbf{Recorte temporal e fonte única:} os artigos cobrem o intervalo de janeiro de 2015 a setembro de 2017 de um único veículo jornalístico, restringindo a generalização dos conteúdos para fatos contemporâneos e concentrando o viés editorial no Sudeste e em Brasília.
+    \item \textbf{Modelo estritamente lexical:} o BM25 baseia-se exclusivamente em contagem de termos e saturação de frequência, sofrendo com \textit{vocabulary mismatch} e polissemia na ausência de módulos de expansão de consulta ou busca vetorial densa.
+    \item \textbf{Variabilidade de execução no modelo RAM:} fatores práticos de hardware, gerenciamento de memória pelo interpretador Python e ausência de paralelismo introduzem flutuações nas medições de tempo, mitigadas por rotinas de aquecimento e uso de medianas.
 \end{itemize}
+
+\section{Declaração de Uso de IA Generativa}
+
+\textbf{Ferramenta e modelos utilizados:} Claude (Anthropic), utilizado ao longo de toda a atividade como apoio ao desenvolvimento, nunca como substituto da decisão técnica da equipe. Nas etapas de avaliação quantitativa de qualidade e refinamento experimental, utilizou-se o ambiente Google Antigravity integrando os modelos Claude Sonnet 4.6 (Thinking) e Gemini 3.8 Flash.
+
+\textbf{Finalidade de cada uso:} auxílio na compreensão dos requisitos do enunciado; discussão e revisão de decisões de arquitetura (por exemplo, a escolha entre manter ou não o chunking do corpus); estruturação e redação do relatório técnico em LaTeX; organização e apresentação dos resultados experimentais em tabelas e texto; identificação de inconsistências entre versões de código produzidas por diferentes integrantes; e apoio na estruturação dos scripts analíticos de qualidade da recuperação e para cálculo de tokens e Precisão@5. Em nenhum momento o código de produção (\texttt{src/*.py}) ou os julgamentos de relevância foram gerados pela IA sem supervisão: a equipe já detinha o conhecimento de BM25, algoritmos de ordenação e análise de complexidade, e usou as ferramentas para verificar, organizar e formalizar esse conhecimento sob supervisão humana contínua.
+
+\textbf{Prompts relevantes:}
+\begin{enumerate}
+    \item Pedido de ajuda para redigir a discussão sobre relação com IA generativa e RAG, cobrindo os pontos exigidos pelo enunciado.
+    \item Solicitação de análise comparativa entre dois scripts de pré-processamento divergentes (um com chunking, outro sem), para decidir qual manter com base na compatibilidade com o restante do código já implementado.
+    \item Pedido de estruturação e reorganização do relatório técnico em LaTeX a partir do esqueleto oficial do repositório, incluindo capa, contracapa e sumário em páginas separadas, e depois reorganizado em formato de introdução, desenvolvimento e conclusão.
+    \item Solicitação de consolidação dos resultados de \texttt{results/raw/runs.csv} em tabelas e de uma discussão de escalabilidade comparando os números medidos com a previsão teórica de complexidade.
+    \item Pedido de verificação de qual código-fonte estava desatualizado (fórmula de relevância, estratégia de busca indexada), comparando arquivos enviados pela equipe em momentos diferentes do desenvolvimento.
+    \item Solicitação de script para extrair distribuição de tokens por documento (médias, quartis e percentil 95\%) e estruturar o \textit{pool} de documentos deduplicados para anotação de Precision@5.
+    \item Solicitação de script para calcular automaticamente a Precision@5 e consolidar resumos por consulta e configuração a partir dos rótulos manuais.
+\end{enumerate}
+
+\textbf{Sugestões aproveitadas:} manter o pipeline sem chunking, com base na incompatibilidade estrutural entre o tipo de \texttt{doc\_id} usado pelo script de chunking e o tipo já implementado no restante do código e respaldado pelos percentis empíricos de tamanho de documento; a estrutura de capa, contracapa e sumário do relatório; a consolidação dos resultados experimentais em tabela única com discussão de escalabilidade; a reorganização do relatório em introdução, desenvolvimento e conclusão; a deduplicação do pool de documentos para viabilizar a anotação humana.
+
+\textbf{Sugestões corrigidas ou rejeitadas:}
+\begin{enumerate}
+    \item A primeira versão da justificativa de corretude e da análise no modelo RAM elaborada com apoio da IA была descartada e substituída pela versão redigida por um integrante da equipe (mais rigorosa e melhor referenciada academicamente), após comparação entre as duas.
+    
+    \item A proposta inicial da IA ao estruturar o experimento de precisão, que desconsiderou a instrução explícita de usar a grade completa de tamanhos ($N \in \{1.000, 5.000, 10.000, 25.000, 50.000\}$) e fixou arbitrariamente o código em apenas $N=5.000$, sendo o código corrigido e reparametrizado para contemplar todos os cinco tamanhos.
+\end{enumerate}
+
+\textbf{Erros identificados:} a IA presumiu inicialmente, com base no planejamento original, que a busca indexada (C2/C3) utilizava busca binária sobre um vetor ordenado de termos; ao ser apresentado o código-fonte real (\texttt{src/inverted\_index.py}), verificou-se que a implementação usa uma tabela hash (\texttt{dict}), e o relatório foi corrigido para refletir isso. No experimento de qualidade, o modelo Gemini 3.8 Flash falhou em seguir a instrução de manter a amostragem em todos os $N$, exigindo intervenção humana.
+
+\textbf{Forma de verificação e supervisão humana:} todo trecho técnico sugerido pela IA (fórmulas, pseudocódigo, texto do relatório, scripts) foi rigorosamente conferido contra o código-fonte real do projeto e contra o texto do enunciado antes de ser incorporado; nenhum conteúdo foi aceito apenas com base na resposta da ferramenta.
+
+\section{Contribuição Individual}
+\begin{itemize}
+    \item \textbf{Gabriel Cavalcante Silva} (Engenharia de Dados e Infraestrutura): configuração do repositório, implementação dos scripts de ingestão e normalização do corpus, e redação do relatório técnico em LaTeX.
+    \item \textbf{Carlos Adriano Gama Cerqueira} (Engenharia de Software: Algoritmos): implementação da busca linear, dos algoritmos de ordenação (Insertion Sort e Merge Sort) e da busca indexada por tabela hash.
+    \item \textbf{Sidney Matheus Santos de Andrade} (Ciência da Computação: Teoria): justificativa formal de corretude (invariante de laço e indução), análise no modelo RAM (melhor, pior e caso médio) e recorrências matemáticas.
+    \item \textbf{Igor Rafael Silva Xavier} (Análise de Desempenho: Testes): condução das execuções experimentais, coleta de tempos e memória, e geração dos gráficos comparativos.
+    \item \textbf{Charlie Rodrigues Fonseca} (Análise Qualitativa e Documentação): preparação do \texttt{README.md} e \texttt{VIDEO.md}, implementação dos scripts de análise de tokens e Precision@5, condução da anotação de relevância e redação das seções correspondentes no relatório.
+    \item \textbf{Toda a equipe}: gravação do vídeo de até 10 minutos e preparação para a apresentação oral.
+\end{itemize}
+
+\section{URL do Vídeo}
+
+Vídeo longo: \url{https://youtu.be/uOwFLV9YuLE}.\\
+Vídeo curto: \url{https://youtu.be/dXrSumXjYn8}.
+
+\section{Referências}
+\begin{itemize}
+    \item COOK, Stephen A.; RECKHOW, Robert A. Time bounded random access machines. \textit{Journal of Computer and System Sciences}, v. 7, n. 4, p. 354–375, 1973.
+    \item CORMEN, Thomas H.; LEISERSON, Charles E.; RIVEST, Ronald L.; STEIN, Clifford. \textit{Introduction to Algorithms}. 4. ed. Cambridge, MA: MIT Press, 2022.
+    \item ERICKSON, Jeff. \textit{Algorithms}. Urbana, IL: Jeff Erickson, 2019. Disponível em: \url{https://jeffe.cs.illinois.edu/teaching/algorithms/}.
+    \item HOARE, C. A. R. An axiomatic basis for computer programming. \textit{Communications of the ACM}, v. 12, n. 10, p. 576–580, 1969.
+    \item KLEINBERG, Jon; TARDOS, Éva. \textit{Algorithm Design}. Boston: Pearson, 2006.
+    \item ROURA, Salvador. Improved master theorems for divide-and-conquer recurrences. \textit{Journal of the ACM}, v. 48, n. 2, p. 170–205, 2001.
+    \item SEDGEWICK, Robert; WAYNE, Kevin. \textit{Algorithms}. 4. ed. Boston: Addison-Wesley, 2011.
+    \item SKIENA, Steven S. \textit{The Algorithm Design Manual}. 3. ed. Cham: Springer, 2020.
+    \item LEWIS, Patrick et al. Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. \textit{NeurIPS}, 2020. Disponível em: \url{https://arxiv.org/abs/2005.11401}.
+    \item ZHOU, Zixuan et al. A Survey on Efficient Inference for Large Language Models. arXiv:2404.14294, 2024. Disponível em: \url{https://arxiv.org/abs/2404.14294}.
+    \item GAN, Aoran et al. Retrieval Augmented Generation Evaluation in the Era of Large Language Models: A Comprehensive Survey. arXiv:2504.14891, 2025. Disponível em: \url{https://arxiv.org/abs/2504.14891}.
+    \item WEN, Cheng et al. Enchanting program specification synthesis by large language models using static analysis and program verification. In: COMPUTER AIDED VERIFICATION, 2024. \textit{Computer Aided Verification – CAV 2024}. Cham: Springer, 2024. p. 302–328.
+    \item WU, Guangyuan et al. LLM meets bounded model checking: neuro-symbolic loop invariant inference. In: IEEE/ACM INTERNATIONAL CONFERENCE ON AUTOMATED SOFTWARE ENGINEERING, 39., 2024, Sacramento. \textit{Proceedings [...]}. New York: ACM, 2024. p. 406–417.
+\end{itemize}
+
+\end{document}
