@@ -1,8 +1,8 @@
 # Vídeo da Atividade — PAA (2026.2)
 
-* **URL do Vídeo:** https://studio.youtube.com/video/uOwFLV9YuLE/edit
-* **Data de Gravação:** `[DD/MM/2026]`
-* **Duração:** `[MM:SS]` (máximo de 10 minutos)
+* **URL do Vídeo:** https://youtu.be/uOwFLV9YuLE
+* **Data de Gravação:** `[22/09/2026]`
+* **Duração:** `[11:49]` (máximo de 10 minutos)
 
 ## Participantes
 
