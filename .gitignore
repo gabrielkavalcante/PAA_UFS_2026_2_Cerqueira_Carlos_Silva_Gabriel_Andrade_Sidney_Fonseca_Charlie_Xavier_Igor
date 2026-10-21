@@ -11,6 +11,10 @@ data/raw/
 *.out
 *.toc
 *.pdf
+!relatorio/relatorio_av2.pdf
+!slides/*.pdf
+relatorio/*.aux
+relatorio/*.log
 
 # Build Python
 *.egg-info/
