@@ -21,7 +21,7 @@
 
 Conforme exigido na **Seção 11 do edital**, o vídeo de apresentação da equipe com duração máxima de 10 minutos está disponível no link abaixo:
 
-* **URL do Vídeo:** `[URL PENDENTE DE GRAVAÇÃO - INSERIR LINK DO YOUTUBE/DRIVE PÚBLICO]`
+* **URL do Vídeo:** https://youtu.be/uOwFLV9YuLE
 * **Arquivo complementar de metadados:** Consulte [`VIDEO.md`](VIDEO.md) para a relação detalhada dos tópicos apresentados e divisão das falas entre os integrantes.
 
 ---
@@ -57,7 +57,6 @@ O acervo utilizado reúne notícias públicas em português do portal Folha de S
 │   ├── queries.csv              # As 5 consultas padronizadas de teste (q1 a q5)
 │   └── pool_judgments.csv       # Pool deduplicado de 132 artigos para anotação de relevância
 ├── docs/                        # Documentação auxiliar e especificações
-├── especificacoes.md            # Edital oficial completo da Atividade 1 (AV1)
 ├── experiments/
 │   ├── run_experiments.py       # Medição de tempo, memória e contagem de comparações (300 runs)
 │   ├── make_plots.py            # Geração dos gráficos comparativos (linear e logarítmico)
@@ -73,7 +72,7 @@ O acervo utilizado reúne notícias públicas em português do portal Folha de S
 │       ├── precision_at_5.csv   # Precision@5 detalhada por consulta e configuração
 │       └── precision_summary.csv# Resumo macro de Precision@5 por configuração e tamanho N
 ├── src/                         # Implementação dos algoritmos clássicos e pipeline
-│   ├── bm25.py                  # Fórmula do BM25 (TF, IDF e parâmetros k1=1.5, b=0.75)
+│   ├── bm25.py                  # Fórmula do BM25 (TF, IDF e parâmetros k1=1.2, b=0.75)
 │   ├── ingest.py                # Download, amostragem reprodutível (seed 42) e preparação
 │   ├── inverted_index.py        # Construção e consulta do índice invertido (tabela hash)
 │   ├── linear_search.py         # Busca linear sobre todos os documentos (Configuração C1)
@@ -134,7 +133,7 @@ python experiments/run_experiments.py
 Gera as figuras com os tempos de consulta e número de comparações em escalas linear e logarítmica:
 ```bash
 python experiments/make_plots.py
-# Gráficos salvos em: results/plots/ e relatorio_AV1_PAA__4_/
+# Gráficos salvos em: results/figures/
 ```
 
 ### 3. Análise de Tokens, Vocabulary Mismatch e Pool de Relevância
@@ -172,6 +171,33 @@ python experiments/compute_precision.py
 
 ---
 
+## Atividade 2 (AV2): seleção de contexto por mochila 0/1 (Trilha A)
+
+A AV2 escolhe, entre os 200 melhores documentos por BM25 de uma consulta, o subconjunto que cabe no orçamento de tokens **W** e maximiza a soma dos scores (mochila 0/1 resolvida por programação dinâmica). O custo de cada documento é `len(tokens)` (proxy de tokens de LLM). Os métodos comparados são `topk_av1` (k = 5, ignora W), `greedy_score`, `greedy_ratio`, `greedy_ratio_plus` e `dp`.
+
+| Pacote | Pessoa | Código |
+| :--- | :--- | :--- |
+| 1 | Carlos Adriano Gama Cerqueira | `src/knapsack_dp.py` |
+| 2 | Sidney Matheus Santos de Andrade | `src/knapsack_greedy.py` |
+| 3 | Charlie Rodrigues Fonseca | `src/av2_candidates.py`, `src/brute_force.py`, `src/topk_av1.py`, `docs/FICHA_CORPUS.md` |
+| 4 | Igor Rafael Silva Xavier | `src/metrics.py`, `experiments/make_plots_av2.py` |
+| 5 | Gabriel Cavalcante Silva | `experiments/run_av2.py` |
+
+Tipos compartilhados em `src/av2_types.py` e instâncias de teste em `tests/fixtures.py`. Cada pacote também traz `tests/test_pN_*.py`, `relatorio/secoes/pN.tex`, `slides/pN.pdf` e `video/pN.mp4`.
+
+### Reprodução (a partir da raiz do repositório)
+
+```bash
+uv sync
+uv run --with pytest pytest tests -q                # todos os testes
+uv run python experiments/run_av2.py                # grade completa: 450 linhas
+uv run python experiments/make_plots_av2.py         # resumo e 5 figuras
+```
+
+Parâmetros fixos: seed 42; N em {10.000, 50.000}; consultas q1 a q5 de `data/queries.csv`; M = 200 candidatos; W em {500, 1.000, 2.000}; 3 repetições medidas mais 1 de aquecimento descartada. Saídas em `results/raw/` (`av2_runs.csv`, `av2_validacao.csv`, `av2_ambiente.txt`, `av2_resumo.csv`) e `results/figures/` (`av2_*.png`). O relatório está em `relatorio/relatorio_av2.pdf`.
+
+---
+
 ## Declaração de Uso de IA Generativa
 
 O projeto utilizou apoio das ferramentas **Claude (Anthropic)** e **Google Antigravity (Claude Sonnet 4.6 Thinking e Gemini 3.8 Flash)** como assistentes técnicos para compreensão de requisitos, estruturação de scripts analíticos e formatação de texto. Todo o desenvolvimento foi realizado sob **supervisão humana estrita**, com revisão integral de código, provas matemáticas refeitas pela equipe e anotação 100% manual dos 132 documentos do pool de avaliação. Maiores detalhes constam na Seção 16 do Relatório Técnico.
@@ -180,4 +206,4 @@ O projeto utilizou apoio das ferramentas **Claude (Anthropic)** e **Google Antig
 
 ## Licença
 
-Este projeto é desenvolvido para fins exclusivamente acadêmicos no âmbito da Universidade Federal de Sergipe (UFS).
+O código é distribuído sob a licença MIT (arquivo [`LICENSE`](LICENSE)). O corpus não é redistribuído neste repositório: ele segue a licença do conjunto de dados no Kaggle (`marlesson/news-of-the-site-folhauol`) e os direitos autorais da Folha de S.Paulo / UOL. O projeto é desenvolvido para fins acadêmicos no âmbito da Universidade Federal de Sergipe (UFS).
