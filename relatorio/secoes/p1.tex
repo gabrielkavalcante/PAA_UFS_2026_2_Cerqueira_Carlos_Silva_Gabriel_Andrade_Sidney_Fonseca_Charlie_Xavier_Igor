@@ -1,0 +1,57 @@
+\section{Programação dinâmica para seleção de contexto}
+
+\subsection{Modelo e estruturas de dados}
+Foi implementado o problema da mochila 0/1 em \texttt{src/knapsack\_dp.py}. A entrada é uma lista de $n$ candidatos na ordem recebida e um orçamento inteiro $W\geq 0$. Cada candidato possui identificador único, valor finito $v_i\geq 0$ (score BM25) e custo inteiro positivo $t_i$ (\texttt{len(tokens)}). Busca-se um subconjunto que maximize a soma dos valores sem ultrapassar $W$, usando cada candidato no máximo uma vez. O ótimo é restrito aos candidatos recuperados (até $M=200$), não ao corpus inteiro, e não garante qualidade semântica ou diversidade.
+
+A tabela \texttt{dp}, com $(n+1)\times(W+1)$ células, armazena os melhores valores por prefixo e capacidade. Um vetor guarda os candidatos reconstruídos. A função compartilhada \texttt{make\_selection} devolve identificadores crescentes, valor total, custo total e a contagem convencional de operações $n(W+1)$.
+
+\subsection{Recorrência e pseudocódigo}
+Para $0\leq w\leq W$, $dp[0][w]=0$. Para $1\leq i\leq n$:
+\[
+dp[i][w]=
+\begin{cases}
+dp[i-1][w], & t_i>w,\\
+\max\{dp[i-1][w],\;dp[i-1][w-t_i]+v_i\}, & t_i\leq w.
+\end{cases}
+\]
+O pseudocódigo usa índices de candidatos iniciados em zero:
+\begin{verbatim}
+solve(candidatos, W):
+    validate(candidatos, W)
+    n <- tamanho(candidatos)
+    dp <- tabela (n+1) por (W+1) de zeros
+    para i de 1 até n:
+        c <- candidatos[i-1]
+        para w de 0 até W:
+            dp[i][w] <- dp[i-1][w]
+            se c.cost <= w:
+                dp[i][w] <- max(dp[i][w],
+                    dp[i-1][w-c.cost] + c.value)
+    escolhidos <- vetor vazio; w <- W
+    para i de n até 1:
+        se dp[i][w] != dp[i-1][w]:
+            c <- candidatos[i-1]
+            acrescentar c a escolhidos
+            w <- w - c.cost
+    retornar make_selection(escolhidos, n*(W+1))
+\end{verbatim}
+Na F7, com $W=10$, os candidatos $(id,v,t)$ são $(1,6,4)$, $(2,6,6)$ e $(3,7,5)$. Os valores $dp[i][10]$, para $i=0,1,2,3$, são $0,6,12,13$. A reconstrução retorna $[1,3]$, valor 13 e custo 9. Empates mantêm a solução do prefixo anterior, omitindo o item atual; a ordenação dos identificadores só ocorre na saída.
+
+\subsection{Corretude}
+O invariante é: $dp[i][w]$ representa o maior valor obtido usando apenas os $i$ primeiros candidatos com capacidade $w$. A prova é por indução em $i$. Na base $i=0$, somente o conjunto vazio é possível, de valor zero. Suponha correta a linha $i-1$. Uma solução ótima ou exclui o item $i$, obtendo no máximo $dp[i-1][w]$, ou o inclui, se $t_i\leq w$, obtendo no máximo $dp[i-1][w-t_i]+v_i$. Ambas as alternativas são realizáveis pela hipótese indutiva; seu máximo fornece exatamente o ótimo da célula. Logo, $dp[n][W]$ é ótimo.
+
+Na reconstrução, se $dp[i][w]\neq dp[i-1][w]$, a inclusão do item $i$ é necessária para atingir o valor da célula, e o subproblema restante tem capacidade $w-t_i$. Caso contrário, existe uma solução ótima sem esse item. Cada passo diminui $i$, impedindo reutilização; somente itens que cabem podem ser incluídos. Assim, a reconstrução termina e retorna um subconjunto ótimo e viável. A prova pressupõe aritmética exata; na implementação, os scores usam \texttt{float}, sujeitos a arredondamento. A comparação entre células segue o contrato, sem tolerância artificial de desempate.
+
+\subsection{Análise e limites}
+No modelo RAM, com aritmética, comparações e acessos de custo unitário, a inicialização usa $\Theta((n+1)(W+1))$ operações; o preenchimento visita $n(W+1)$ células e a reconstrução custa $O(n)$. A ordenação dos $k$ escolhidos custa $O(k\log k)$, absorvido pelo preenchimento porque $k\leq\min(n,W)$ para custos inteiros positivos. Tempo e espaço são $\Theta((n+1)(W+1))$, ou $\Theta(nW)$ para $n,W\geq1$, tanto no melhor quanto no pior caso: não há interrupção antecipada. A contagem \texttt{ops} mede somente as transições, não o trabalho total.
+
+Sem reconstrução, uma única linha atualizada por capacidades decrescentes reduz o espaço a $\Theta(W+1)$, usualmente $\Theta(W)$. O custo é pseudo-polinomial: depende do valor de $W$, cuja representação binária ocupa $\Theta(\log(W+1))$ bits para $W\geq1$. Tokenização, embeddings, disco, API e geração pelo LLM não são contabilizados pelo algoritmo.
+
+Os testes T01 e T02 verificam F1, F7, F4, F6 e o contraexemplo F9: o DP escolhe $[2,3,4]$, de valor $9{,}1$, descartando o documento de valor individual 9,0. Portanto, ótimo aditivo não significa preservar a evidência individualmente mais relevante. Testes suplementares cobrem validação, vazios, empates, imutabilidade da entrada, uso único dos itens, 200 candidatos e comparação com enumeração exaustiva em instâncias pequenas reprodutíveis.
+
+\subsection*{Uso de IA neste pacote}
+\begin{itemize}
+  \item Ferramenta/modelo: assistente do editor de texto Zed; revisão com OpenAI GPT-6.1 Sol.
+  \item Finalidade e prompts: escrita dos testes automatizados e revisão da implementação do algoritmo de knapsack.
+  \item Verificação: testes automatizados, comparação independente com enumeração exaustiva, Pyright e Ruff.
+\end{itemize}
