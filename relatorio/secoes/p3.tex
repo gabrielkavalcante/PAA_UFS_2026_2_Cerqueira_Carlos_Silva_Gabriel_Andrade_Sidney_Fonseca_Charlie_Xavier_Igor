@@ -1,0 +1,50 @@
+\section{Identificação, Problema Formal e Linhas de Base (Pacote 3)}
+\label{sec:pacote3}
+
+\subsection{Identificação do Trabalho, Corpus e Contribuições}
+Este trabalho integra a disciplina de Projeto e Análise de Algoritmos (PAA --- 2026.2, UFS) sob o \textbf{Tema 6 (Notícias de Fontes Públicas)}. O repositório no GitHub do usuário \texttt{gabrielkavalcante} é versionado da entrega da AV1 (tag \texttt{av1}, commit \texttt{47aaffc}) até a entrega final da AV2 (tag \texttt{av2}, branch \texttt{main}), sob licença MIT para o código-fonte. O corpus é o \emph{News of the Site Folha de S.Paulo} (Kaggle, \texttt{marlesson/news-of-the-site-} \texttt{folhauol}, acessado em 09/09/2026; ficha em \texttt{docs/FICHA\_CORPUS.md}), com $167.053$ notícias em português brasileiro (jan/2015 a set/2017) sob licença \texttt{CC0: Public Domain} no Kaggle (mantidos os direitos editoriais da Folha/UOL). A amostragem reprodutível (\texttt{seed=42}) para $N \in \{10.000, 50.000\}$ resulta em $9.954$ e $49.741$ documentos reais após limpeza de textos vazios e duplicatas de título+texto, sem \emph{chunking} (mediana de $238$ e P95 de $558$ tokens em $N=50.000$). A Tabela~\ref{tab:contribuicoes_av2} apresenta a divisão dos pacotes.
+
+\begin{table}[h]
+\centering
+\scriptsize
+\caption{Tabela de contribuição individual e divisão dos pacotes da AV2.}
+\label{tab:contribuicoes_av2}
+\begin{tabular}{clp{3.6cm}p{4.4cm}p{2.6cm}}
+\toprule
+\textbf{P.} & \textbf{Pessoa} & \textbf{Código} & \textbf{Relatório (2 páginas)} & \textbf{Fechamento} \\
+\midrule
+1 & Carlos & \texttt{src/knapsack\_dp.py} & Algoritmo, pseudocódigo, corretude e análise do DP & Tag \texttt{av2} e Classroom (04/11) \\
+2 & Sidney & \texttt{src/knapsack\_greedy.py} & Gulosos: regras, contraexemplo, aproximação 1/2 e análise & Junta \texttt{slides/p1} a \texttt{p5.pdf} (03/11) \\
+3 & Charlie & \texttt{av2\_candidates.py}, \texttt{brute\_force.py}, \texttt{topk\_av1.py}, \texttt{FICHA\_CORPUS.md} & Identificação, corpus, continuidade da AV1, definição formal, casos de borda e contribuições & Junta \texttt{video/p1} a \texttt{p5.mp4} e URL (03/11) \\
+4 & Igor & \texttt{src/metrics.py}, \texttt{make\_plots\_av2.py} & Metodologia experimental, resultados e comparação com linhas de base & Compila PDF do relatório (03/11) \\
+5 & Gabriel & \texttt{experiments/run\_av2.py} & Relação com IA generativa, limitações, conclusão e referências & Grade (28/10), \texttt{README} e \texttt{LICENSE} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Continuidade em Relação à AV1}
+\begin{itemize}
+  \item \textbf{Mantido da AV1:} ingestão (\texttt{ingest.py}), normalização Unicode NFD e filtro de \emph{stopwords} (\texttt{normalize.py}), score BM25 com $k_1 = 1{,}2$ e $b = 0{,}75$ (\texttt{bm25.py}), índice invertido em tabela hash e \texttt{indexed\_search} (\texttt{inverted\_index.py}), \texttt{merge\_sort} instrumentado (\texttt{sorting.py}) e \texttt{pipeline.py}.
+  \item \textbf{Acrescentado na AV2:} contrato e validação (\texttt{av2\_types.py}), gerador de candidatos (\texttt{av2\_candidates.py}), programação dinâmica (\texttt{knapsack\_dp.py}), gulosos (\texttt{knapsack\_greedy.py}), linhas de base (\texttt{topk\_av1.py} e \texttt{brute\_force.py}), métricas (\texttt{metrics.py}), testes (\texttt{tests/}) e scripts da grade (\texttt{run\_av2.py}, \texttt{make\_plots\_av2.py}).
+  \item \textbf{Refatorado:} nada da AV1 foi alterado. A função \texttt{build\_candidates} chama \texttt{indexed\_search} e \texttt{merge\_sort} da AV1, corta nos $M = 200$ melhores documentos com score positivo e anexa o custo \texttt{document\_lengths[doc\_id]}.
+\end{itemize}
+
+\subsection{Definição Formal, Estruturas de Dados, Linhas de Base e Casos de Borda}
+Na Trilha A, a seleção de contexto é formulada como a \textbf{Mochila 0/1}:
+\begin{itemize}
+  \item \textbf{Entrada:} lista de candidatos $C = \langle c_1, \dots, c_n \rangle$ ($n \le M = 200$), onde cada $c_i = (\text{id}_i, v_i, w_i)$ tem identificador único $\text{id}_i \in \mathbb{Z}_{\ge 0}$, score BM25 $v_i \in \mathbb{R}_{\ge 0}$ e custo em tokens $w_i \in \mathbb{Z}_{> 0}$, além do orçamento inteiro $W \in \mathbb{Z}_{\ge 0}$.
+  \item \textbf{Saída, restrição e objetivo:} subconjunto $S \subseteq C$ que satisfaz a restrição de capacidade $\sum_{c_i \in S} w_i \le W$ ($x_i \in \{0,1\}$) e maximiza a soma de scores $\max_{S \subseteq C} \sum_{c_i \in S} v_i$.
+  \item \textbf{Critério de corretude e estruturas:} todo método valida $(C, W)$ via \texttt{validate} e devolve \texttt{Selection(doc\_ids, total\_value, total\_cost, ops)} com \texttt{doc\_ids} crescentes via \texttt{make\_selection}. Uma solução exata $S^*$ deve ser viável ($W(S^*) \le W$) e atingir $V(S^*) \ge V(S')$ para todo $S' \subseteq C$ viável (tolerância $10^{-9}$), com desempate determinístico.
+\end{itemize}
+
+As \textbf{linhas de base} são: (1) \textbf{Top-$k$ da AV1} (\texttt{topk\_av1.py}, $k=5$), que ordena por $v_i$ via \texttt{merge\_sort} ($\texttt{ops} = \text{comparações}$) e devolve os $k$ primeiros ignorando $W$, podendo estourar o orçamento (em F4/T06, retorna $[1, 2]$ com custo $11 > W = 4$); (2) \textbf{três gulosos} (\texttt{knapsack\_greedy.py}, $\texttt{ops} = \text{comparações} + n$), por score (\texttt{greedy\_score}), por razão $v_i/w_i$ (\texttt{greedy\_ratio}) e a variante $1/2$-aproximada (\texttt{greedy\_ratio\_plus}); e (3) \textbf{força bruta} (\texttt{brute\_force.py}, $\texttt{ops} = 2^n$), que testa os $2^n$ subconjuntos para $n \le 20$ nos testes (T05: $[1, 3]$ em F7 e $[2, 3, 4]$ em F9) e na validação ($n=15$). Os \textbf{casos de borda} cobertos por \texttt{validate} e F1--F9 incluem: candidatos vazios (F5, T06) ou consulta sem correspondência (devolvem \texttt{Selection([], 0.0, 0, ops)}); orçamento zero ($W=0$, F6) ou itens todos acima de $W$ (F4, seleção vazia no DP/gulosos); empates determinísticos (F2); e entradas inválidas (\texttt{doc\_id} repetido em F8/T05, $w_i \le 0$, $v_i < 0$, $W < 0$, ou $n > 20$ na força bruta), que levantam \texttt{ValueError}.
+
+\subsection*{Uso de IA neste pacote}
+\begin{itemize}
+  \item Ferramenta e modelo: Google Antigravity (Gemini).
+  \item Finalidade: apoio na implementação de \texttt{av2\_candidates.py}, \texttt{brute\_force.py} e \texttt{topk\_av1.py}, ficha do corpus, testes T05/T06 e formatação de \texttt{p3.tex} e \texttt{slides/p3.pdf}.
+  \item Prompts relevantes (até 5): implementar código e testes do Pacote 3 conforme o contrato fixo; redigir ficha do corpus, seção \texttt{p3.tex} e slides.
+  \item Sugestões aproveitadas, corrigidas ou rejeitadas: estrutura tabular aproveitada; filtro de candidatos restrito a $v_i > 0$ e $w_i > 0$ ajustado para preservar o contrato.
+  \item Erros identificados e como foram verificados: conferência manual das instâncias F4, F5, F7, F8 e F9 e execução dos testes T05 e T06.
+\end{itemize}
+
