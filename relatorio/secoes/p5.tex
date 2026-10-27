@@ -1,0 +1,47 @@
+\section{Relação com IA generativa, limitações e conclusão}
+
+\subsection{Onde a seleção entra no RAG}
+Em um sistema de geração aumentada por recuperação (RAG)~\cite{lewis2020}, o retriever devolve documentos candidatos e o prompt do modelo precisa caber em uma janela de contexto limitada. O problema estudado neste trabalho fica entre essas duas etapas: dados os $m = 200$ candidatos ordenados pelo BM25~\cite{robertson2009}, escolher quais deles vão para a janela. A escolha é um problema da mochila 0/1~\cite{kellerer2004}: cada documento tem valor (score BM25) e custo (tokens), e o orçamento $W$ é o limite de tokens reservado ao contexto.
+
+O resultado da seleção afeta o sistema em três pontos:
+\begin{itemize}
+  \item \textbf{Tokens do prompt.} Com a seleção por mochila, o custo total nunca passa de $W$. O baseline da AV1, que envia os $k$ primeiros documentos, ignora $W$: na instância de teste F4 ele envia 11 tokens com $W = 4$.
+  \item \textbf{Latência e custo.} A seleção ocorre antes da geração. O DP custa $\Theta(n \cdot W)$ em tempo e espaço, e os gulosos custam $\Theta(n \log n)$ pelo \emph{merge sort}~\cite{cormen2012}. Os tempos medidos por método, $N$ e $W$ estão na seção de resultados (rodada de 28/10).
+  \item \textbf{Fundamentação da resposta.} O contexto escolhido limita o que o modelo pode citar. A seleção não verifica se a resposta gerada é fiel aos documentos: este protótipo não gera resposta, então não há verificação de afirmações.
+\end{itemize}
+
+\subsection{Riscos}
+\begin{itemize}
+  \item \textbf{Perder evidência relevante.} O DP maximiza a soma dos scores, não a qualidade de cada documento. Na instância F9 ($W = 10$), o DP escolhe três documentos de scores 3,0, 3,0 e 3,1 (soma 9,1) e descarta o documento de score 9,0, que sozinho ocupa todo o orçamento. O ganho em valor total é de 0,1, e o documento mais relevante fica fora do contexto.
+  \item \textbf{Contexto enviesado.} Os scores vêm de um modelo apenas lexical sobre uma única fonte. Nenhuma das regras de seleção trata redundância ou diversidade, que são medidas à parte (cobertura e redundância).
+  \item \textbf{Aproximação apresentada como ótimo.} As regras gulosas por score e por razão não têm garantia: na instância F1, a regra por razão escolhe valor 2,0 onde o ótimo é 10,0. Só a variante \texttt{ratio\_plus} garante pelo menos metade do valor ótimo. Os resultados devem dizer qual método foi usado.
+\end{itemize}
+
+\subsection{Limitações}
+\begin{itemize}
+  \item Fonte única de notícias (Folha de S.Paulo, 2015 a 2017).
+  \item BM25 é apenas lexical e sofre com sinônimos e polissemia.
+  \item O número de tokens é um proxy do custo real, que depende do tokenizador do modelo.
+  \item O corte em $M = 200$ candidatos pode deixar de fora documentos úteis.
+  \item Apenas três valores de orçamento: $W \in \{500, 1000, 2000\}$.
+  \item Todas as medições vêm de Python em uma única máquina, sem paralelismo.
+\end{itemize}
+
+\subsection{Conclusão}
+A mochila 0/1 resolvida por programação dinâmica é a única das regras testadas que garante um contexto ótimo dentro do orçamento de tokens, ao custo de $\Theta(n \cdot W)$. Os gulosos são mais rápidos, mas só a variante \texttt{ratio\_plus} tem garantia, de 1/2 do ótimo. O ganho medido do DP sobre os gulosos e sobre o top-5 da AV1 está na seção de resultados. Vídeo de apresentação: URL a preencher em 03/11.
+
+\subsection*{Uso de IA neste pacote}
+\begin{itemize}
+  \item Ferramenta e modelo: Claude (Anthropic), modelo Sonnet 5.5.
+  \item Finalidade: escrever o programa \texttt{experiments/run\_av2.py}, os testes T09 e T10, o README, a licença e as seções e slides do pacote 5.
+  \item Prompts relevantes (até 5): implementar o pacote 5 do plano da AV2; escrever a seção \texttt{p5.tex} e os slides conforme o plano.
+  \item Sugestões aproveitadas, corrigidas ou rejeitadas: a estrutura do plano foi seguida; o conteúdo dos slides sugerido inicialmente foi corrigido para o que o plano pede (relação com RAG, limitações e conclusão).
+  \item Erros identificados e como foram verificados: os exemplos numéricos (F1, F4 e F9) foram conferidos contra as instâncias fixas do plano; os testes T09 e T10 foram executados.
+\end{itemize}
+
+\begin{thebibliography}{9}
+\bibitem{cormen2012} Cormen, T. H.; Leiserson, C. E.; Rivest, R. L.; Stein, C. \emph{Algoritmos: Teoria e Prática}. 3.\ ed. Rio de Janeiro: Elsevier, 2012.
+\bibitem{kellerer2004} Kellerer, H.; Pferschy, U.; Pisinger, D. \emph{Knapsack Problems}. Berlim: Springer, 2004.
+\bibitem{robertson2009} Robertson, S.; Zaragoza, H. The Probabilistic Relevance Framework: BM25 and Beyond. \emph{Foundations and Trends in Information Retrieval}, v. 3, n. 4, p. 333--389, 2009.
+\bibitem{lewis2020} Lewis, P. et al. Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. In: \emph{Advances in Neural Information Processing Systems}, v. 33, 2020.
+\end{thebibliography}
