@@ -1,0 +1,118 @@
+\section{Linhas de base gulosas}
+
+Os três métodos desta seção são as linhas de base da programação dinâmica:
+escolhem os documentos em uma única passada, sem tabela. Todos chamam
+\texttt{validate}, ordenam os candidatos com o \texttt{merge\_sort} da AV1
+(chave decrescente, desempate pelo menor \texttt{doc\_id}) e pegam cada
+documento que ainda cabe no que sobra de $W$ (\texttt{src/knapsack\_greedy.py}).
+
+\subsection{As três regras}
+
+\begin{itemize}
+  \item \texttt{greedy\_score} (chave $v_i$): o mais relevante primeiro; é o
+    top-$k$ da AV1 respeitando $W$.
+  \item \texttt{greedy\_ratio} (chave $v_i/c_i$): mais relevância por token;
+    prefere documentos densos.
+  \item \texttt{greedy\_ratio\_plus}: o maior entre o resultado de
+    \texttt{greedy\_ratio} e o melhor documento que cabe sozinho; protege
+    contra o caso em que um documento grande vale mais que o conjunto denso.
+\end{itemize}
+
+\begin{algorithm}[ht]
+\caption{Gulosos: \texttt{greedy\_score} = \textsc{Guloso}$(C, W, v_i)$ e
+\texttt{greedy\_ratio} = \textsc{Guloso}$(C, W, v_i/c_i)$.}
+\begin{algorithmic}[1]
+\Function{Guloso}{$C, W, \mathit{chave}$}
+  \State $S \gets \emptyset$;\; $r \gets W$
+  \For{$i \in \textsc{MergeSort}(C, \mathit{chave})$}
+    \Comment{decrescente; empate pelo menor id}
+    \State \textbf{se} $c_i \le r$ \textbf{então} $S \gets S \cup \{i\}$;\; $r \gets r - c_i$
+  \EndFor
+  \State \Return $S$
+\EndFunction
+\Function{RatioPlus}{$C, W$}
+  \State $S \gets \textsc{Guloso}(C, W, v_i/c_i)$;\;
+    $j \gets \arg\max\{v_i : c_i \le W\}$
+  \State \Return o de maior valor entre $S$ e $\{j\}$ \Comment{empate: $S$}
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Quando é ótimo e quando é heurística}
+
+A regra $v/c$ foi proposta por Dantzig~\cite{dantzig1957} e é ótima na
+mochila fracionária, em que se pode levar parte de um
+documento~\cite{cormen2012}. Argumento de troca: com os itens em ordem de razão
+($r_1 \ge \dots \ge r_n$) e nem todos cabendo, o guloso $x$ enche os $k-1$
+primeiros e uma fração do $k$-ésimo, usando todo o orçamento. Se uma solução
+ótima $x^*$ difere de $x$, no primeiro índice $i$ em que diferem vale
+$x^*_i < x_i$, e existe $j > i$ com $x^*_j > x_j$. Passar $\varepsilon$ tokens
+de $j$ para $i$ mantém a viabilidade e muda o valor em
+$\varepsilon(r_i - r_j) \ge 0$; repetindo, $x^*$ vira $x$ sem perder valor.
+
+Na mochila 0/1 a troca deixa de valer. Em F1 ($W = 10$; itens
+$(v, c) = (10, 10)$ e $(2, 1)$), \texttt{greedy\_ratio} pega o item 2 (razão 2
+contra 1) e o item 1 deixa de caber: valor 2 contra o ótimo 10. Com o item 1
+trocado por $(W, W)$, a razão entre os dois é $2/W$, que tende a zero.
+\texttt{greedy\_score} falha no caso oposto: em F9 fica com o documento de
+valor 9{,}0, que ocupa todo o orçamento, quando $\{2, 3, 4\}$ vale 9{,}1.
+Assim, \texttt{greedy\_score} e \texttt{greedy\_ratio} não têm garantia de
+aproximação.
+
+\subsection{Garantia de 1/2 para \texttt{greedy\_ratio\_plus}}
+
+\textbf{Teorema~\cite{kellerer2004}.} \texttt{greedy\_ratio\_plus} obtém pelo menos
+$\mathrm{OPT}/2$.
+
+\textbf{Prova.} Itens com $c_i > W$ não entram em nenhuma solução e podem ser
+descartados. Se os demais cabem juntos, o guloso pega todos e é ótimo. Senão,
+seja $k$ o primeiro item, em ordem de razão, que o guloso não pega. Todos os
+anteriores foram pegos, então o guloso vale $G \ge \sum_{i<k} v_i$, e a solução
+fracionária ótima leva esses itens e uma fração de $k$. Logo
+\[
+  \mathrm{OPT} \le \mathrm{OPT}_{\text{frac}} \le \sum_{i<k} v_i + v_k
+  \le G + v_{\max} \le 2\max(G, v_{\max}),
+\]
+em que $v_{\max}$ é o maior valor de um item que cabe sozinho, e
+$\max(G, v_{\max})$ é exatamente o que o método devolve. \hfill$\square$
+
+A constante é justa: com $W = 100$ e itens $(1{,}1;\ 1)$, $(50;\ 50)$ e
+$(50;\ 50)$, o método obtém 51{,}1 e o ótimo é 100.
+
+\subsection{Análise e riscos para o contexto do LLM}
+
+Montar os pares custa $\Theta(n)$, o \texttt{merge\_sort} faz no máximo
+$n\lceil\log_2 n\rceil$ comparações~\cite{cormen2012} e a varredura (mais a busca do melhor item,
+no \texttt{ratio\_plus}) custa $\Theta(n)$: tempo $\Theta(n \log n)$,
+independente de $W$, e espaço $\Theta(n)$. Com $n = 200$ e $W = 2000$, a regra
+de \texttt{ops} (comparações $+\ n$) dá no máximo 1.800 operações, contra
+$n(W+1) = 400.200$ do DP. Custos fora do algoritmo (tokenização, índice, BM25,
+disco, API e geração) não entram em \texttt{t\_selecao\_ms}.
+
+Nenhuma regra gulosa trata redundância ou diversidade: duas notícias quase
+iguais entram juntas e gastam tokens com a mesma evidência (métrica
+\texttt{redundancy}). Trabalhos recentes formulam a seleção de contexto do RAG
+como uma variante da mochila que penaliza redundância e apontam que a seleção
+gulosa aproveita mal a janela~\cite{xu2026}. A regra $v/c$ favorece textos curtos, que podem encher a
+janela de fragmentos; a regra por score favorece textos longos e pode gastar
+todo o orçamento em um só documento (F9).
+
+\subsection*{Uso de IA neste pacote}
+\begin{itemize}
+  \item Ferramenta e modelo: Claude (Anthropic).
+  \item Finalidade: gerar rascunhos do código, dos testes T03 e T04 e desta
+    seção a partir do plano da AV2. Os requisitos vieram do plano; a revisão,
+    as decisões e a validação dos resultados foram do autor.
+  \item Prompts relevantes (até 5): implementar o Pacote 2 do plano (gulosos);
+    explicar a garantia de 1/2 e o contraexemplo F1; buscar uma referência
+    clássica e uma recente para a seção.
+  \item Sugestões aproveitadas, corrigidas ou rejeitadas: após revisão, foram
+    aproveitadas a estrutura das três funções e a varredura completa (o guloso
+    segue procurando itens menores depois de um que não cabe); a seção foi
+    reduzida para caber em 2 páginas; o autor pediu a inclusão de uma
+    referência clássica~\cite{dantzig1957} e uma recente~\cite{xu2026} e
+    aprovou as escolhidas, além de Cormen e Kellerer.
+  \item Erros identificados e como foram verificados: testes com
+    \texttt{pytest}, comparação com força bruta em instâncias aleatórias e
+    conferência dos exemplos F1 e F9 com as instâncias fixas do plano.
+\end{itemize}
