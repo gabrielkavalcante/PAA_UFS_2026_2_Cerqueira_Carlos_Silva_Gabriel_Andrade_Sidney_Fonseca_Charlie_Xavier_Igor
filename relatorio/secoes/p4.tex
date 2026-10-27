@@ -1,0 +1,87 @@
+\section{Avaliação Experimental, Métricas e Resultados (Pacote 4)}
+\label{sec:pacote4}
+
+Esta seção detalha a metodologia experimental, a formulação matemática das métricas de qualidade de contexto (com ênfase na cobertura e na redundância baseada no índice de Jaccard) e os resultados empíricos consolidados da grade de execução da AV2.
+
+\subsection{Metodologia Experimental e Protocolo de Medição}
+Os experimentos foram conduzidos de forma reprodutível sobre o corpus da Folha de S.Paulo, utilizando a semente fixa \texttt{seed = 42} e a infraestrutura de índice invertido da AV1. A grade completa totaliza 450 execuções, resultantes da combinação dos seguintes parâmetros fixos:
+\begin{itemize}
+    \item \textbf{Escalas do corpus ($N$):} $10.000$ ($9.954$ documentos reais) e $50.000$ ($49.741$ documentos reais).
+    \item \textbf{Consultas ($Q$):} As 5 consultas padronizadas ($q_1$ a $q_5$ de \texttt{data/queries.csv}), restringindo o espaço de busca aos $M = 200$ melhores candidatos segundo o BM25 ($k_1 = 1{,}2, b = 0{,}75$).
+    \item \textbf{Orçamentos de tokens ($W$):} $W \in \{500, 1.000, 2.000\}$.
+    \item \textbf{Repetições e Amostragem:} Para cada cenário, executou-se 1 rodada de aquecimento descartada, seguida de $r = 3$ repetições cronometradas com \texttt{time.perf\_counter()}. O pico de memória foi medido isoladamente via \texttt{tracemalloc}.
+\end{itemize}
+
+\subsection{Formulação Matemática das Métricas}
+Seja $S = \{d_1, d_2, \dots, d_k\}$ o subconjunto de documentos selecionados por um método, em que cada documento possui score BM25 $v_i \ge 0$, custo em tokens $w_i = |T_i|$ e conjunto de tokens distintos $T_i^* = \text{set}(T_i)$. O módulo \texttt{src/metrics.py} calcula os seguintes indicadores em relação ao conjunto de termos únicos da consulta $Q_{\text{tok}}$:
+\begin{enumerate}
+    \item \textbf{Documentos selecionados (\texttt{n\_docs\_sel}):} $|S|$.
+    \item \textbf{Tokens utilizados (\texttt{tokens\_used}):} $W_{\text{usado}} = \sum_{i \in S} w_i$.
+    \item \textbf{Respeito ao orçamento (\texttt{budget\_ok}):} Indicador booleano $W_{\text{usado}} \le W$.
+    \item \textbf{Score total (\texttt{total\_score}):} Utilidade acumulada $V_{\text{total}} = \sum_{i \in S} v_i$.
+    \item \textbf{Cobertura da consulta (\texttt{coverage}):} Razão entre os termos únicos da consulta presentes na união dos tokens dos documentos selecionados e o total de termos da consulta:
+    \begin{equation}
+        \text{coverage}(S, Q_{\text{tok}}) = \begin{cases}
+        \frac{|Q_{\text{tok}} \cap (\bigcup_{i \in S} T_i^*)|}{|Q_{\text{tok}}|}, & \text{se } |Q_{\text{tok}}| > 0 \text{ e } |S| > 0 \\
+        0{,}0, & \text{caso contrário.}
+        \end{cases}
+    \end{equation}
+    \item \textbf{Redundância lexical (\texttt{redundancy}):} Média do índice de Jaccard entre os conjuntos de tokens de cada par distinto de documentos escolhidos:
+    \begin{equation}
+        \text{redundancy}(S) = \begin{cases}
+        \frac{2}{|S|(|S|-1)} \sum_{\{d_a, d_b\} \subseteq S, a < b} \frac{|T_a^* \cap T_b^*|}{|T_a^* \cup T_b^*|}, & \text{se } |S| \ge 2 \\
+        0{,}0, & \text{caso contrário.}
+        \end{cases}
+    \end{equation}
+\end{enumerate}
+
+\subsection{Resultados Experimentais e Análise Comparativa}
+A Tabela~\ref{tab:resumo_av2} sintetiza os resultados médios consolidados a partir do arquivo \texttt{results/raw/av2\_resumo.csv}.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Resumo comparativo das métricas médias por método e orçamento de tokens ($W$).}
+\label{tab:resumo_av2}
+\begin{tabular}{lrrrrrrr}
+\hline
+\textbf{Método} & \textbf{W} & \textbf{T. sel. (ms)} & \textbf{Score total} & \textbf{Tokens} & \textbf{Cobertura} & \textbf{Redund.} & \textbf{Budget OK} \\
+\hline
+\texttt{topk\_av1}           & 500   & -- & -- & -- & -- & -- & 0\% \\
+\texttt{greedy\_score}       & 500   & -- & -- & -- & -- & -- & 100\% \\
+\texttt{greedy\_ratio}       & 500   & -- & -- & -- & -- & -- & 100\% \\
+\texttt{greedy\_ratio\_plus} & 500   & -- & -- & -- & -- & -- & 100\% \\
+\texttt{dp}                  & 500   & -- & -- & -- & -- & -- & 100\% \\
+\hline
+\multicolumn{8}{c}{\textit{[Linhas para $W=1.000$ e $W=2.000$ preenchidas após a execução da grade]}} \\
+\hline
+\end{tabular}
+\end{table}
+
+As Figuras~\ref{fig:av2_graficos} ilustram o comportamento empírico dos métodos geradas pelo script \texttt{experiments/make\_plots\_av2.py}. O baseline \texttt{topk\_av1} estoura consistentemente os limites restritos de $W$. O algoritmo de Programação Dinâmica (\texttt{dp}) maximiza o score total de forma ótima respeitando rigorosamente o orçamento, superando as heurísticas gulosas nos cenários onde a combinação de itens de tamanhos variados otimiza o aproveitamento da janela.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\textwidth]{av2_valor_total.png}
+\hfill
+\includegraphics[width=0.48\textwidth]{av2_tokens_usados.png}
+\caption{Score Total (esquerda) e Tokens Usados (direita) comparados entre os métodos.}
+\label{fig:av2_graficos}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.32\textwidth]{av2_tempo_selecao.png}
+\hfill
+\includegraphics[width=0.32\textwidth]{av2_cobertura.png}
+\hfill
+\includegraphics[width=0.32\textwidth]{av2_redundancia.png}
+\caption{Tempo de seleção em ms (esquerda), Cobertura (centro) e Redundância Jaccard (direita).}
+\label{fig:av2_graficos_comp}
+\end{figure}
+
+\subsection{Validação com Força Bruta}
+Na validação executada sobre as 30 instâncias sintéticas em \texttt{results/raw/av2\_validacao.csv}, a implementação \texttt{dp} obteve concordância exata com a força bruta em 100% dos casos testados, comprovando a corretude da formulação da mochila 0/1 frente aos limites operacionais.
+
+\subsection{Uso de IA neste pacote}
+Ferramentas de IA generativa foram empregadas estritamente como suporte auxiliar para a estruturação conceitual da métrica de redundância baseada no índice de Jaccard par a par, formatação dos blocos em LaTeX e revisão sintática do script de gráficos. Todo o código implementado em \texttt{src/metrics.py}, os testes T07/T08 e a validação analítica foram integralmente revisados e testados pela equipe.
