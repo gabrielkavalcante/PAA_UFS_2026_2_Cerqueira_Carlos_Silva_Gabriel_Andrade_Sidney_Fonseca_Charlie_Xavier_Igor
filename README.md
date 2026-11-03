@@ -3,6 +3,7 @@
 > **Projeto e Análise de Algoritmos (PAA) — 2026.2**  
 > **Universidade Federal de Sergipe (UFS)** — Departamento de Computação  
 > **Atividade 1 (AV1):** Corretude, eficiência e recuperação de contexto para IA generativa  
+> **Atividade 2 (AV2):** Seleção de contexto por mochila 0/1 com programação dinâmica (Trilha A)  
 > **Tema 6:** Notícias de Fontes Públicas (Folha de S.Paulo / UOL)
 
 ---
@@ -21,8 +22,9 @@
 
 Conforme exigido na **Seção 11 do edital**, o vídeo de apresentação da equipe com duração máxima de 10 minutos está disponível no link abaixo:
 
-* **URL do Vídeo:** https://youtu.be/uOwFLV9YuLE
+* **URL do Vídeo (AV1):** https://youtu.be/uOwFLV9YuLE
 * **Arquivo complementar de metadados:** Consulte [`VIDEO.md`](VIDEO.md) para a relação detalhada dos tópicos apresentados e divisão das falas entre os integrantes.
+* **Vídeo da AV2:** os clipes individuais ficam em [`video/`](video/) (`p1.mp4` a `p5.mp4`). A URL do vídeo único de até 10 minutos será acrescentada aqui e em [`VIDEO.md`](VIDEO.md) na entrega.
 
 ---
 
@@ -56,21 +58,28 @@ O acervo utilizado reúne notícias públicas em português do portal Folha de S
 ├── data/
 │   ├── queries.csv              # As 5 consultas padronizadas de teste (q1 a q5)
 │   └── pool_judgments.csv       # Pool deduplicado de 132 artigos para anotação de relevância
-├── docs/                        # Documentação auxiliar e especificações
+├── docs/                        # Documentação auxiliar, planos e ficha do corpus (`FICHA_CORPUS.md`)
 ├── experiments/
 │   ├── run_experiments.py       # Medição de tempo, memória e contagem de comparações (300 runs)
 │   ├── make_plots.py            # Geração dos gráficos comparativos (linear e logarítmico)
 │   ├── quality_analysis.py      # Extração estatística de tokens (médias, quartis, P95) e mismatch
-│   └── compute_precision.py     # Cálculo automatizado de Precision@5 a partir do pool
+│   ├── compute_precision.py     # Cálculo automatizado de Precision@5 a partir do pool
+│   ├── run_av2.py               # AV2: grade de 450 execuções (5 métodos, N, W, consultas e repetições)
+│   └── make_plots_av2.py        # AV2: resumo (`av2_resumo.csv`) e 5 figuras
 ├── pyproject.toml               # Metadados do projeto e dependências oficiais
 ├── README.md                    # Este arquivo com instruções completas de reprodução
 ├── results/
+│   ├── figures/                 # Gráficos comparativos (AV1) e `av2_*.png` (AV2)
 │   └── raw/                     # Dados brutos em CSV gerados pelos experimentos
 │       ├── runs.csv             # 300 execuções cronometradas com métricas de tempo e memória
 │       ├── token_stats.csv      # Estatísticas de tokens por tamanho de corpus (médias e percentis)
 │       ├── vocab_mismatch.csv   # Análise sistemática de vocabulary mismatch por consulta
 │       ├── precision_at_5.csv   # Precision@5 detalhada por consulta e configuração
-│       └── precision_summary.csv# Resumo macro de Precision@5 por configuração e tamanho N
+│       ├── precision_summary.csv# Resumo macro de Precision@5 por configuração e tamanho N
+│       ├── av2_runs.csv         # AV2: 450 execuções cronometradas com métricas de qualidade
+│       ├── av2_resumo.csv       # AV2: médias e desvios por N, W e método
+│       ├── av2_validacao.csv    # AV2: DP contra força bruta em 30 instâncias sintéticas
+│       └── av2_ambiente.txt     # AV2: ambiente, parâmetros e comando da rodada
 ├── src/                         # Implementação dos algoritmos clássicos e pipeline
 │   ├── bm25.py                  # Fórmula do BM25 (TF, IDF e parâmetros k1=1.2, b=0.75)
 │   ├── ingest.py                # Download, amostragem reprodutível (seed 42) e preparação
@@ -78,7 +87,20 @@ O acervo utilizado reúne notícias públicas em português do portal Folha de S
 │   ├── linear_search.py         # Busca linear sobre todos os documentos (Configuração C1)
 │   ├── normalize.py             # Normalização (lowercase, remoção de acentos e stopwords NLTK)
 │   ├── pipeline.py              # Orquestrador do pipeline de busca e ranking (C1, C2, C3, C4)
-│   └── sorting.py               # Insertion Sort e Merge Sort instrumentados com comparador estável
+│   ├── sorting.py               # Insertion Sort e Merge Sort instrumentados com comparador estável
+│   ├── av2_types.py             # AV2: tipos compartilhados (`Candidate`, `Selection`) e validação
+│   ├── av2_candidates.py        # AV2: candidatos (M = 200) pelo índice invertido e merge sort
+│   ├── knapsack_dp.py           # AV2: mochila 0/1 por programação dinâmica
+│   ├── knapsack_greedy.py       # AV2: gulosos por score, por razão e `ratio_plus`
+│   ├── topk_av1.py              # AV2: baseline top-k da AV1 (ignora W)
+│   ├── brute_force.py           # AV2: força bruta para validar o DP (n pequeno)
+│   └── metrics.py               # AV2: cobertura, redundância e demais métricas de qualidade
+├── relatorio/
+│   └── secoes/                  # AV2: seções do relatório (`p1.tex` a `p5.tex`)
+├── slides/                      # AV2: slides individuais (`pN.pdf`) e `apresentacao.pdf`
+├── tests/                       # AV2: instâncias fixas (`fixtures.py`) e testes T01 a T10
+├── video/                       # AV2: clipes individuais (`pN.mp4`)
+├── LICENSE                      # Licença MIT do código
 ├── VIDEO.md                     # Metadados obrigatórios, checklist e roteiro do vídeo
 └── .gitignore                   # Regras de exclusão para CSVs pesados e artefatos de build
 ```
@@ -194,13 +216,30 @@ uv run python experiments/run_av2.py                # grade completa: 450 linhas
 uv run python experiments/make_plots_av2.py         # resumo e 5 figuras
 ```
 
-Parâmetros fixos: seed 42; N em {10.000, 50.000}; consultas q1 a q5 de `data/queries.csv`; M = 200 candidatos; W em {500, 1.000, 2.000}; 3 repetições medidas mais 1 de aquecimento descartada. Saídas em `results/raw/` (`av2_runs.csv`, `av2_validacao.csv`, `av2_ambiente.txt`, `av2_resumo.csv`) e `results/figures/` (`av2_*.png`). O relatório está em `relatorio/relatorio_av2.pdf`.
+Parâmetros fixos: seed 42; N em {10.000, 50.000}; consultas q1 a q5 de `data/queries.csv`; M = 200 candidatos; W em {500, 1.000, 2.000}; 3 repetições medidas mais 1 de aquecimento descartada. Saídas em `results/raw/` (`av2_runs.csv`, `av2_validacao.csv`, `av2_ambiente.txt`, `av2_resumo.csv`) e `results/figures/` (`av2_*.png`). O relatório está em `relatorio/relatorio_av2.pdf` e os slides reunidos em `slides/apresentacao.pdf`.
+
+### Resultados da rodada de 28/10
+
+Rodada executada em Windows 11, Python 3.14.4, 16 núcleos (`results/raw/av2_ambiente.txt`). Valor total médio do contexto escolhido (soma dos scores BM25), com média sobre N, consultas e repetições:
+
+| W | `dp` | `greedy_ratio` | `greedy_score` | `topk_av1` | Tempo de seleção do `dp` |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 500 | 39,04 | 37,97 | 22,68 | 31,46 * | 12,7 ms |
+| 1.000 | 64,99 | 63,60 | 32,36 | 31,46 * | 32,0 ms |
+| 2.000 | 107,23 | 105,64 | 62,72 | 31,46 | 72,4 ms |
+
+\* O `topk_av1` ignora W: estourou o orçamento em 51 das 90 execuções, por isso seu valor não é comparável ao dos demais métodos.
+
+* O `dp` respeitou W em todas as 90 execuções e coincidiu com a força bruta nas 30 instâncias de validação (n = 15).
+* O `greedy_ratio` ficou entre 96,8% e 98,6% do valor do `dp`; o `greedy_score`, entre 47% e 62%.
+* O `greedy_ratio_plus` teve resultado idêntico ao `greedy_ratio` em todas as execuções desta grade.
+* Tempo de seleção: cerca de 0,4 ms nos gulosos, contra 12 a 74 ms no `dp`.
 
 ---
 
 ## Declaração de Uso de IA Generativa
 
-O projeto utilizou apoio das ferramentas **Claude (Anthropic)** e **Google Antigravity (Claude Sonnet 4.6 Thinking e Gemini 3.8 Flash)** como assistentes técnicos para compreensão de requisitos, estruturação de scripts analíticos e formatação de texto. Todo o desenvolvimento foi realizado sob **supervisão humana estrita**, com revisão integral de código, provas matemáticas refeitas pela equipe e anotação 100% manual dos 132 documentos do pool de avaliação. Maiores detalhes constam na Seção 16 do Relatório Técnico.
+O projeto utilizou apoio das ferramentas **Claude (Anthropic)** e **Google Antigravity (Claude Sonnet 4.6 Thinking e Gemini 3.8 Flash)** como assistentes técnicos para compreensão de requisitos, estruturação de scripts analíticos e formatação de texto. Todo o desenvolvimento foi realizado sob **supervisão humana estrita**, com revisão integral de código, provas matemáticas refeitas pela equipe e anotação 100% manual dos 132 documentos do pool de avaliação. Maiores detalhes constam na Seção 16 do Relatório Técnico. Na AV2, cada seção do relatório traz a subseção "Uso de IA neste pacote", com ferramenta, finalidade, prompts, sugestões aproveitadas e erros verificados.
 
 ---
 
