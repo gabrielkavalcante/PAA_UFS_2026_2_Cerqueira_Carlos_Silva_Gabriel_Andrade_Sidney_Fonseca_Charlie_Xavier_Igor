@@ -1,0 +1,82 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\graphicspath{{results/figures/}{../results/figures/}}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\begin{document}
+
+% ============================================================
+% CAPA
+% ============================================================
+\begin{titlepage}
+\centering
+\IfFileExists{logoUFS-5b7c1d387ab83d8c06b27e6943deddc28337984b1536cf0b2aad371d4db297a0.png}{\includegraphics[width=3cm]{logoUFS-5b7c1d387ab83d8c06b27e6943deddc28337984b1536cf0b2aad371d4db297a0.png}\\[0.8cm]}{}
+{\large UNIVERSIDADE FEDERAL DE SERGIPE}\\
+{\large DEPARTAMENTO DE COMPUTAÇÃO}\\
+{\large PROGRAMA DE PÓS-GRADUAÇÃO EM CIÊNCIA DA COMPUTAÇÃO}\\[2cm]
+
+{\Large\bfseries Atividade 2 (AV2): Recuperação de Contexto e Otimização para IA Generativa}\\[3cm]
+
+{\large Carlos Adriano Gama Cerqueira}\\
+{\large Gabriel Cavalcante Silva}\\
+{\large Sidney Matheus Santos de Andrade}\\
+{\large Charlie Rodrigues Fonseca}\\
+{\large Igor Rafael Silva Xavier}\\[2cm]
+
+\vfill
+{\large Aracaju/SE}\\
+{\large \today}
+\end{titlepage}
+
+% ============================================================
+% CONTRACAPA (folha de rosto)
+% ============================================================
+\begin{titlepage}
+\centering
+{\large Carlos Adriano Gama Cerqueira}\\
+{\large Gabriel Cavalcante Silva}\\
+{\large Sidney Matheus Santos de Andrade}\\
+{\large Charlie Rodrigues Fonseca}\\
+{\large Igor Rafael Silva Xavier}\\[3cm]
+
+{\Large\bfseries Atividade 2 (AV2): Recuperação de Contexto e Otimização para IA Generativa}\\[3cm]
+
+\begin{minipage}{0.6\textwidth}
+Trabalho apresentado à disciplina de Projeto e Análise de Algoritmos (PAA), como requisito parcial de avaliação da Atividade 2 (AV2), sob orientação do(a) professor(a) Glauco de Figueiredo Carneiro.
+\end{minipage}\\[3cm]
+
+\vfill
+{\large Aracaju/SE}\\
+{\large \today}
+\end{titlepage}
+
+% ============================================================
+% SUMÁRIO
+% ============================================================
+\newpage
+\tableofcontents
+\thispagestyle{empty}
+\newpage
+
+\setcounter{page}{1}
+
+% ============================================================
+% SEÇÕES DO TRABALHO (PACOTES 1 A 5)
+% ============================================================
+\input{secoes/p3.tex}
+\input{secoes/p1.tex}
+\input{secoes/p2.tex}
+\input{secoes/p4.tex}
+\input{secoes/p5.tex}
+
+\end{document}
