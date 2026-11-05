@@ -1,89 +1,52 @@
 \section{Avaliação Experimental, Métricas e Resultados (Pacote 4)}
 \label{sec:pacote4}
 
-Esta seção detalha a metodologia experimental, a formulação matemática das métricas de qualidade de contexto (com ênfase na cobertura e redundância via índice de Jaccard) e os resultados empíricos consolidados da grade de execução da AV2.
+Esta seção detalha a metodologia experimental e os resultados empíricos consolidados da grade de execução da AV2.
 
-\subsection{Metodologia Experimental e Protocolo de Medição}
-Os experimentos foram conduzidos de forma reprodutível sobre o corpus da Folha de S.Paulo, utilizando a semente fixa \texttt{seed = 42} e a infraestrutura de índice invertido da AV1. A grade completa totaliza 450 execuções, resultantes da combinação dos seguintes parâmetros fixos:
-\begin{itemize}
-    \item \textbf{Escalas do corpus ($N$):} $10.000$ ($9.954$ documentos reais) e $50.000$ ($49.741$ documentos reais).
-    \item \textbf{Consultas ($Q$):} 5 consultas padronizadas ($q_1$ a $q_5$ de \texttt{data/queries.csv}), restringindo a busca aos $M = 200$ melhores candidatos via BM25 ($k_1 = 1{,}2, b = 0{,}75$).
-    \item \textbf{Orçamentos de tokens ($W$):} $W \in \{500, 1.000, 2.000\}$.
-    \item \textbf{Repetições:} 1 rodada de aquecimento descartada e $r = 3$ repetições cronometradas via \texttt{time.perf\_counter()}.
-\end{itemize}
-
-Os comandos utilizados para a reprodução integral deste experimento são:
+\subsection{Metodologia Experimental e Métricas}
+Os experimentos utilizaram a infraestrutura da AV1 sobre o corpus da Folha de S.Paulo (\texttt{seed = 42}). A grade possui 450 execuções, variando $N \in \{10.000, 50.000\}$, $W \in \{500, 1.000, 2.000\}$ e 5 consultas (\texttt{data/queries.csv}), filtrando os $M = 200$ melhores candidatos via BM25. Os comandos para reprodução são:
 \begin{verbatim}
 uv sync
 uv run python experiments/run_av2.py
 uv run python experiments/make_plots_av2.py
 \end{verbatim}
 
-\subsection{Formulação Matemática das Métricas}
-O módulo \texttt{src/metrics.py} avalia o subconjunto selecionado $S$ em relação aos termos da consulta $Q_{\text{tok}}$. Além do score BM25 acumulado e do total de tokens, destacam-se:
-\begin{enumerate}
-    \item \textbf{Cobertura da consulta (\texttt{coverage}):} Razão entre os termos únicos da consulta presentes na união dos tokens dos documentos e o total de termos da consulta (resultando $0{,}0$ em seleções vazias).
-    \item \textbf{Redundância lexical (\texttt{redundancy}):} Média do índice de Jaccard entre os conjuntos de tokens de cada par distinto de documentos escolhidos:
-    \begin{equation}
-        \text{redundancy}(S) = \begin{cases}
-        \frac{2}{|S|(|S|-1)} \sum_{\{d_a, d_b\} \subseteq S, a < b} \frac{|T_a^* \cap T_b^*|}{|T_a^* \cup T_b^*|}, & \text{se } |S| \ge 2 \\
-        0{,}0, & \text{caso contrário.}
-        \end{cases}
-    \end{equation}
-\end{enumerate}
-
-\subsection{Resultados Experimentais e Análise Comparativa}
-A Tabela~\ref{tab:resumo_av2} sintetiza o comportamento empírico (dados de \texttt{results/raw/av2\_resumo.csv}). Três observações globais fundamentam os algoritmos na prática:
-\begin{enumerate}
-    \item \textbf{Estouro sistemático do Top-K:} O baseline \texttt{topk\_av1} ultrapassou o orçamento de tokens em 51 das 90 execuções, invalidando os seus scores em orçamentos restritos.
-    \item \textbf{Cobertura máxima alcançada:} A métrica de \texttt{coverage} atingiu o valor máximo de $1{,}0$ em todas as configurações.
-    \item \textbf{Empate das heurísticas gulosas:} O método \texttt{greedy\_ratio\_plus} produziu resultados estritamente idênticos ao \texttt{greedy\_ratio} na totalidade das instâncias deste acervo.
-\end{enumerate}
-
-A análise detalhada de cada métrica visualizada nas Figuras \ref{fig:av2_graficos_principais} e \ref{fig:av2_graficos_complementares} revela o seguinte comportamento:
+O módulo \texttt{src/metrics.py} calcula as seguintes métricas:
 \begin{itemize}
-    \item \textbf{Valor Total (Score BM25):} O gráfico demonstra que a Programação Dinâmica (DP) maximiza a utilidade do contexto, superando as heurísticas gulosas em todas as faixas de orçamento. O baseline \texttt{topk\_av1} aparenta atingir pontuações altas para orçamentos restritos ($W=500$), mas tal valor é espúrio, decorrente da violação sistemática da capacidade da mochila.
-    \item \textbf{Tokens Usados:} Evidencia a eficiência do algoritmo exato em preencher a janela estipulada. Enquanto o DP acomoda os artigos aproximando-se rigorosamente do limite de orçamento ($W$, linha tracejada vermelha), fica evidente o estouro provocado pelo \texttt{topk\_av1}, que ultrapassa 1.000 tokens mesmo quando o limite imposto é de 500.
-    \item \textbf{Cobertura da Consulta:} O comportamento horizontal ilustra que todos os algoritmos avaliados conseguiram atingir cobertura máxima ($1{,}0$). Isso significa que, mesmo ao sacrificar documentos para caber na janela, todos os métodos garantiram a presença de 100\% dos termos únicos da busca original no vocabulário final selecionado.
-    \item \textbf{Redundância Média (Jaccard):} Mede a sobreposição lexical par a par entre os documentos escolhidos. O gráfico revela que a repetição de vocabulário manteve-se em patamares baixos e equilibrados (majoritariamente abaixo de $0{,}10$). A fragmentação efetuada pelo DP não introduziu penalidades significativas de redundância na janela.
-    \item \textbf{Tempo de Seleção:} Expõe o custo algorítmico das abordagens. Enquanto o \texttt{topk\_av1} e as abordagens gulosas resolvem o problema em frações de milissegundo, o DP reflete claramente a sua complexidade pseudo-polinomial $\Theta(M \cdot W)$, escalando linearmente com o orçamento e atingindo $\approx 70$ ms para $W=2000$ — um atraso ainda considerado insignificante perante a latência natural de inferência de um LLM.
+    \item \textbf{Cobertura (\texttt{coverage}):} Razão entre os termos únicos da consulta presentes na união dos tokens selecionados e o total de termos da consulta.
+    \item \textbf{Redundância (\texttt{redundancy}):} Média do índice de Jaccard par a par entre os documentos escolhidos ($0{,}0$ para seleções com menos de 2 documentos).
 \end{itemize}
 
+\subsection{Resultados Experimentais e Análise Comparativa}
+Os dados empíricos extraídos de \texttt{results/raw/av2\_resumo.csv} e ilustrados na Figura~\ref{fig:av2_graficos_consolidados} revelam três comportamentos principais:
+\begin{enumerate}
+    \item \textbf{Estouro sistemático do Top-K:} O baseline \texttt{topk\_av1} violou o limite orçamentário em 51 das 90 execuções, invalidando os seus scores em orçamentos restritos.
+    \item \textbf{Cobertura máxima:} A métrica atingiu o valor de $1{,}0$ em todas as configurações, retendo a totalidade dos termos de busca originais.
+    \item \textbf{Empate das heurísticas:} O método \texttt{greedy\_ratio\_plus} não demonstrou ganho prático sobre o \texttt{greedy\_ratio}, produzindo resultados idênticos.
+\end{enumerate}
+
+Analisando o comportamento visual, a Programação Dinâmica (DP) maximiza o score de relevância preenchendo otimamente a janela sem violar a capacidade $W$ (linha tracejada vermelha). A redundância manteve-se equilibrada (abaixo de $0{,}10$). O custo de tempo de seleção do DP reflete a complexidade $\Theta(M \cdot W)$, atingindo cerca de 70 ms para $W=2000$ — perfeitamente aceitável para mitigar a latência de inferência em LLMs.
+
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.95\textwidth]{av2_valor_total.png}
-
-\vspace{0.5cm}
-\includegraphics[width=0.95\textwidth]{av2_tokens_usados.png}
-\caption{Score Total (acima) e Tokens Usados (abaixo). A Programação Dinâmica (DP) otimiza o valor respeitando rigorosamente o limite $W$ (linha tracejada vermelha), enquanto o baseline top-5 o viola sistematicamente.}
-\label{fig:av2_graficos_principais}
+\includegraphics[width=0.75\textwidth]{av2_valor_total.png} \\ \vspace{0.2cm}
+\includegraphics[width=0.75\textwidth]{av2_tokens_usados.png} \\ \vspace{0.2cm}
+\includegraphics[width=0.75\textwidth]{av2_cobertura.png} \\ \vspace{0.2cm}
+\includegraphics[width=0.75\textwidth]{av2_redundancia.png} \\ \vspace{0.2cm}
+\includegraphics[width=0.75\textwidth]{av2_tempo_selecao.png}
+\caption{Métricas consolidadas. O algoritmo exato (DP) otimiza o valor total respeitando o orçamento rigorosamente, enquanto a linha de base o ultrapassa.}
+\label{fig:av2_graficos_consolidados}
 \end{figure}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{av2_cobertura.png}
+\subsection{Avaliação Manual de Relevância e Verificação (Testes)}
+Na validação de controle (\texttt{av2\_validacao.csv}), a Programação Dinâmica (DP) obteve 100\% de concordância com a força bruta. Uma avaliação manual simples de Precision@k ($W=500$) confirmou trocas semânticas vantajosas: o algoritmo descarta arquivos muito extensos no topo por múltiplos textos mais concisos (média de 150 tokens) de alta pertinência, limitando o risco de \textit{truncation}.
 
-\vspace{0.4cm}
-\includegraphics[width=0.85\textwidth]{av2_redundancia.png}
-
-\vspace{0.4cm}
-\includegraphics[width=0.85\textwidth]{av2_tempo_selecao.png}
-\caption{Métricas complementares de qualidade e custo: Cobertura da consulta (acima), Redundância par a par via Jaccard (meio) e Tempo de seleção em milissegundos (abaixo).}
-\label{fig:av2_graficos_complementares}
-\end{figure}
-
-\subsection{Avaliação Manual de Relevância (Precision@k e Otimalidade)}
-Na validação exata sobre as 30 instâncias sintéticas (\texttt{results/raw/av2\_validacao.csv}), o método \texttt{dp} cravou concordância de 100\% com a busca exaustiva (força bruta).
-
-Para atender à necessidade de uma avaliação qualitativa do contexto recuperado, procedeu-se a uma avaliação manual simples de relevância (atuando como uma métrica de Precision@k dinâmica). Ao cruzar as escolhas efetuadas pela Programação Dinâmica sob o orçamento mais restrito ($W=500$) com o \textit{pool} de julgamentos anotados na AV1, verificou-se que o algoritmo realiza uma troca semântica vantajosa: sacrifica artigos altamente extensos do topo do ranking por múltiplos documentos curtos (média de 150 tokens) de posições adjacentes. A inspeção destas seleções confirma que as substituições mantêm rigorosa pertinência ao tema da consulta, garantindo um Precision@k elevado sobre os itens efetivamente enviados à janela e evitando o risco de \textit{truncation} que desestabilizaria a formulação da resposta pelo LLM.
-
-\subsection{Verificação e Casos de Teste Automatizados}
-A Tabela~\ref{tab:testes_av2} consolida as evidências do rastreamento de testes de todo o protótipo via \texttt{pytest}, cobrindo 10 cenários que excedem o mínimo estipulado.
+A Tabela~\ref{tab:testes_av2} documenta o rastreamento dos casos de teste exigidos na especificação.
 
 \begin{table}[H]
 \centering
 \footnotesize
-\caption{Matriz de evidências e verificação dos casos de teste da AV2.}
+\caption{Matriz de evidências e verificação de testes automatizados (AV2).}
 \label{tab:testes_av2}
 \begin{tabular}{cp{3.3cm}p{2.3cm}p{2.3cm}p{2.3cm}c}
 \hline
@@ -91,17 +54,17 @@ A Tabela~\ref{tab:testes_av2} consolida as evidências do rastreamento de testes
 \hline
 T01 & DP em limites normais & $\le W$ e valor ótimo & Valores idênticos & Logs \texttt{pytest} & Passou \\
 T02 & DP vs. Guloso adversarial & $\text{DP} > \text{Guloso}$ & $\text{DP}=13{,}0 > \text{Gul}=12{,}0$ & Logs \texttt{pytest} & Passou \\
-T03 & Heurísticas de ratio e score & Respeito a $W$ & Orçamento válido & Logs \texttt{pytest} & Passou \\
+T03 & Heurísticas de ratio/score& Respeito a $W$ & Orçamento válido & Logs \texttt{pytest} & Passou \\
 T04 & Garantia do ratio\_plus & $V \ge 0{,}5 \cdot V_{opt}$ & Regra satisfeita & Logs \texttt{pytest} & Passou \\
 T05 & Candidatos do baseline & $M$ itens ordenados & Estrutura íntegra & Logs \texttt{pytest} & Passou \\
 T06 & DP igual Força Bruta & Delta $\le 10^{-9}$ & Diferença zero & Logs \texttt{pytest} & Passou \\
-T07 & Métricas p4 (budget OK) & $\text{cov}=1{,}0, \text{ok}=\text{True}$ & Valores exatos & Logs \texttt{pytest} & Passou \\
-T08 & Estouro e seleção vazia & $\text{cov}=0{,}0, \text{ok}=\text{False}$ & Valores exatos & Logs \texttt{pytest} & Passou \\
-T09 & Pipeline curto integrado & Execução sem erros & CSV gerado & \texttt{av2\_runs.csv} & Passou \\
-T10 & Escalabilidade $M=200$ & Tolerância $W$ e OOM & Limites intactos & \texttt{av2\_runs.csv} & Passou \\
+T07 & Métricas p4 (budget OK) & $\text{cov}=1{,}0, \text{ok}=V$ & Valores exatos & Logs \texttt{pytest} & Passou \\
+T08 & Estouro/seleção vazia & $\text{cov}=0{,}0, \text{ok}=F$ & Valores exatos & Logs \texttt{pytest} & Passou \\
+T09 & Pipeline integrado & Execução limpa & CSV gerado & \texttt{runs.csv} & Passou \\
+T10 & Escalabilidade $M=200$ & Tolerância $W$ e OOM & Limites intactos & \texttt{runs.csv} & Passou \\
 \hline
 \end{tabular}
 \end{table}
 
 \subsection{Uso de IA neste pacote}
-Ferramentas de IA generativa foram empregadas de forma controlada como apoio na construção matemática da formulação de Jaccard par a par no \LaTeX{} e na consolidação da formatação visual das tabelas. O script de métricas \texttt{src/metrics.py} e os julgamentos analíticos que constatam os 51 estouros orçamentários do baseline e as eficiências qualitativas da mochila foram integralmente estruturados e interpretados a partir dos dados pela equipa, preservando a supervisão humana sobre as saídas.
+Modelos de IA generativa atuaram de forma restrita no mapeamento das fórmulas em \LaTeX{} e na compactação tabular. A conceção lógica das métricas de Jaccard no \texttt{src/metrics.py} e os julgamentos sobre violações de orçamento mantiveram-se sob análise da equipe.
