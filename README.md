@@ -20,11 +20,9 @@
 
 ## Vídeo da atividade
 
-Conforme exigido na **Seção 11 do edital**, o vídeo de apresentação da equipe com duração máxima de 10 minutos está disponível no link abaixo:
-
-* **URL do Vídeo (AV1):** https://youtu.be/uOwFLV9YuLE
-* **Arquivo complementar de metadados:** Consulte [`VIDEO.md`](VIDEO.md) para a relação detalhada dos tópicos apresentados e divisão das falas entre os integrantes.
-* **Vídeo da AV2:** os clipes individuais ficam em [`video/`](video/) (`p1.mp4` a `p5.mp4`). A URL do vídeo único de até 10 minutos será acrescentada aqui e em [`VIDEO.md`](VIDEO.md) na entrega.
+* **URL do Vídeo (AV1):** https://youtu.be/uOwFLV9YuLE (11:49)
+* **URL do Vídeo (AV2):** https://youtu.be/JimsN27pCZA (10:04)
+* **Arquivo complementar de metadados:** Consulte [`VIDEO.md`](VIDEO.md) para a relação detalhada dos tópicos apresentados e divisão das falas entre os integrantes. Os clipes individuais estão em [`video/`](video/) (`p1.mp4` a `p5.mp4`).
 
 ---
 
